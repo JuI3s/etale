@@ -1,0 +1,14 @@
+[package]
+name = "fiat_shamir_aborts"
+version = "0.1.0"
+edition = "2021"
+description = "Implementation of Fiat-Shamir with Aborts (Lyubashevsky 2009)"
+
+[dependencies]
+rand = "0.8"
+rand_chacha = "0.3"
+sha2 = "0.10"
+
+[dev-dependencies]
+rand_chacha = "0.3"
+
