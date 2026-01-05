@@ -44,7 +44,7 @@ fn demo_identification(rng: &mut ChaCha20Rng) {
 
     // Run identification
     println!("Running identification protocol...");
-    match scheme.identify(rng, &keypair, 100) {
+    match scheme.prove(rng, &keypair, 100) {
         Some((commitment, challenge, z)) => {
             println!("  Commitment w = {}", commitment.w);
             println!("  Challenge c = {}", challenge.c);
@@ -182,7 +182,7 @@ fn demo_rejection_sampling(rng: &mut ChaCha20Rng) {
 
         // Run many identifications
         for _ in 0..200 {
-            scheme.identify(rng, &keypair, 50);
+            scheme.prove(rng, &keypair, 50);
         }
 
         println!(

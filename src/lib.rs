@@ -410,7 +410,8 @@ impl IdentificationScheme {
     }
 
     /// Run the full identification protocol (with retries on abort)
-    pub fn identify<R: Rng>(
+    /// Generates a proof that the prover knows the secret key
+    pub fn prove<R: Rng>(
         &mut self,
         rng: &mut R,
         keypair: &KeyPair,
@@ -582,7 +583,7 @@ mod tests {
         let keypair = scheme.keygen(&mut rng);
 
         // Run identification (may need multiple attempts due to aborts)
-        let result = scheme.identify(&mut rng, &keypair, 100);
+        let result = scheme.prove(&mut rng, &keypair, 100);
         assert!(result.is_some(), "Identification should succeed");
 
         let (commitment, challenge, z) = result.unwrap();
@@ -604,7 +605,7 @@ mod tests {
         let wrong_keypair = scheme.keygen(&mut rng);
 
         // Generate valid proof with correct key
-        let result = scheme.identify(&mut rng, &keypair, 100);
+        let result = scheme.prove(&mut rng, &keypair, 100);
         assert!(result.is_some());
 
         let (commitment, challenge, z) = result.unwrap();
@@ -632,7 +633,7 @@ mod tests {
         let num_samples = 1000;
 
         while z_samples.len() < num_samples {
-            if let Some((_, _, z)) = scheme.identify(&mut rng, &keypair, 10) {
+            if let Some((_, _, z)) = scheme.prove(&mut rng, &keypair, 10) {
                 z_samples.push(z);
             }
         }
@@ -727,8 +728,8 @@ mod tests {
 
         // Run many identifications
         for _ in 0..100 {
-            tight_scheme.identify(&mut rng, &tight_kp, 100);
-            loose_scheme.identify(&mut rng, &loose_kp, 100);
+            tight_scheme.prove(&mut rng, &tight_kp, 100);
+            loose_scheme.prove(&mut rng, &loose_kp, 100);
         }
 
         println!(
@@ -796,10 +797,10 @@ mod tests {
         let mut z2_samples: Vec<i64> = Vec::new();
 
         for _ in 0..500 {
-            if let Some((_, _, z)) = scheme1.identify(&mut rng, &kp1, 10) {
+            if let Some((_, _, z)) = scheme1.prove(&mut rng, &kp1, 10) {
                 z1_samples.extend(z.centered());
             }
-            if let Some((_, _, z)) = scheme2.identify(&mut rng, &kp2, 10) {
+            if let Some((_, _, z)) = scheme2.prove(&mut rng, &kp2, 10) {
                 z2_samples.extend(z.centered());
             }
         }
