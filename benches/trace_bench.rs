@@ -1,3 +1,5 @@
+#![allow(non_local_definitions)]
+
 use ark_ff::fields::models::fp::{Fp64, MontBackend, MontConfig};
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use lattice_crypto::lattice::trace::{
@@ -6,7 +8,6 @@ use lattice_crypto::lattice::trace::{
 use rand::thread_rng;
 
 // Test field configuration for benchmarking
-#[allow(non_local_definitions)]
 #[derive(MontConfig)]
 #[modulus = "65557"]
 #[generator = "2"]
