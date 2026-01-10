@@ -16,12 +16,15 @@ struct BenchFqConfig;
 
 type BenchFq = Fp64<MontBackend<BenchFqConfig, 1>>;
 
+// Benchmark parameters
+const TRACE_PARAMS: &[(usize, usize)] = &[(64, 4), (128, 4), (256, 4), (512, 4), (1024, 4)];
+const AUTOMORPHISM_DIMS: &[usize] = &[64, 128, 256, 512, 1024];
+const AUTOMORPHISMS: &[usize] = &[1, 17, 33, 65]; // Common automorphisms
+
 fn bench_trace_naive(c: &mut Criterion) {
     let mut group = c.benchmark_group("trace_naive");
 
-    let params = vec![(64, 4), (128, 4), (256, 4), (512, 4), (1024, 4)];
-
-    for (d, k) in params {
+    for &(d, k) in TRACE_PARAMS {
         let h = GaloisSubgroup::new(d, k);
         let mut rng = thread_rng();
         let x = CyclotomicRingElement::<BenchFq>::random(&mut rng, d);
@@ -39,9 +42,7 @@ fn bench_trace_naive(c: &mut Criterion) {
 fn bench_trace_tower(c: &mut Criterion) {
     let mut group = c.benchmark_group("trace_tower");
 
-    let params = vec![(64, 4), (128, 4), (256, 4), (512, 4), (1024, 4)];
-
-    for (d, k) in params {
+    for &(d, k) in TRACE_PARAMS {
         let h = GaloisSubgroup::new(d, k);
         let mut rng = thread_rng();
         let x = CyclotomicRingElement::<BenchFq>::random(&mut rng, d);
@@ -59,11 +60,8 @@ fn bench_trace_tower(c: &mut Criterion) {
 fn bench_automorphism(c: &mut Criterion) {
     let mut group = c.benchmark_group("automorphism");
 
-    let dims = vec![64, 128, 256, 512, 1024];
-    let automorphisms = vec![1, 17, 33, 65]; // Common automorphisms
-
-    for d in dims {
-        for &sigma in &automorphisms {
+    for &d in AUTOMORPHISM_DIMS {
+        for &sigma in AUTOMORPHISMS {
             let mut rng = thread_rng();
             let x = CyclotomicRingElement::<BenchFq>::random(&mut rng, d);
 
