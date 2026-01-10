@@ -1,6 +1,6 @@
 # lattice-crypto
 
-Lattice-based cryptography primitives for Hachi integration.
+Lattice-based cryptography primitives.
 
 ## Tower Trace (32× speedup)
 
