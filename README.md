@@ -2,6 +2,8 @@
 
 Lattice-based cryptography primitives. More details and references are in my private notes.
 
+Documentation available at https://jui3s.github.io/lattice-crypto/.
+
 > **Note:** Documentation is under construction, written with LLM assistance.
 
 ## Tower Trace (32× speedup)
