@@ -8,7 +8,7 @@ src = "book/src"
 build-dir = "book/build"
 
 [output.html]
-default-theme = "rust"
+default-theme = "light"
 preferred-dark-theme = "ayu"
 git-repository-url = "https://github.com/juliuszhang/lattice-crypto"
 edit-url-template = "https://github.com/juliuszhang/lattice-crypto/edit/main/{path}"
