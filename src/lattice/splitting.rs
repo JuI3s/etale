@@ -45,7 +45,7 @@ pub struct SplittingParams {
     /// iff it's non-zero when evaluated at each of the `num_splits` roots.
     ///
     /// **Note:** Currently used for validation and documentation only.
-    /// Future: will be used in `is_difference_invertible()` for full verification.
+    /// Future: will be used in `is_definitely_difference_invertible()` for full verification.
     pub num_splits: usize,
 
     /// Coefficient bound: challenges have coefficients in {-τ, ..., τ}
@@ -395,19 +395,8 @@ pub fn challenge_from_seed(seed: &[u8], n: usize, omega: usize, tau: u64) -> Cha
     Challenge::new(sparse_coeffs, n)
 }
 
-/// Check if a challenge difference is invertible in the partially split ring
-///
-/// For power-of-two cyclotomics with k splits, an element is invertible iff
-/// it's non-zero when evaluated at each of the k roots of X^n + 1
-///
-/// This is a simplified check that works for the common case where
-/// differences of small challenges are invertible with high probability.
-///
-/// **Used params:** `n` (for L1 norm bound check)  
-/// **Partially used:** `num_splits`, `modulus` (for full evaluation - currently simplified)
-///
-/// TODO: Implement full evaluation at primitive roots when `num_splits` > 1
-pub fn is_difference_invertible(diff: &Challenge, params: &SplittingParams) -> bool {
+/// Fast path check for difference invertibility
+pub fn is_definitely_difference_invertible(diff: &Challenge, params: &SplittingParams) -> bool {
     // For ternary challenges with weight ω, the difference has weight at most 2ω
     // and coefficients in {-2, -1, 0, 1, 2}
     //
@@ -436,49 +425,7 @@ pub fn is_difference_invertible(diff: &Challenge, params: &SplittingParams) -> b
     let l1_norm: i64 = diff.sparse_coeffs.iter().map(|(_, c)| c.abs()).sum();
 
     // Simple check: L1 norm bound for invertibility (for non-zero elements)
-    if l1_norm > 0 && l1_norm < params.n as i64 {
-        return true;
-    }
-
-    // For more complex cases, we'd need to check evaluation at roots
-    // This requires knowing the factorization of X^n + 1 mod q
-    // TODO: Claude suggested the below exact check. It passed my BS check but I need to verify this is correct.
-    check_invertibility_by_evaluation(diff, params)
-}
-
-/// Check invertibility by evaluating at primitive roots
-///
-/// More expensive but handles edge cases
-fn check_invertibility_by_evaluation(diff: &Challenge, params: &SplittingParams) -> bool {
-    if diff.sparse_coeffs.is_empty() {
-        return false; // Zero is not invertible
-    }
-
-    // For power-of-two cyclotomics X^n + 1:
-    // The roots are ζ^{2j+1} for j = 0, ..., n-1 where ζ is a primitive 2n-th root of unity
-    //
-    // If q ≡ 1 (mod 2n), we can find ζ in Z_q and check each evaluation
-
-    // Simplified: if the challenge has very small weight compared to n,
-    // and non-zero constant term, it's very likely invertible
-    if diff.weight() <= params.n / 4 {
-        // Check if constant term is non-zero
-        let has_nonzero_constant = diff
-            .sparse_coeffs
-            .iter()
-            .any(|&(idx, c)| idx == 0 && c != 0);
-        if has_nonzero_constant {
-            return true;
-        }
-    }
-
-    // For full verification, we'd compute:
-    // ∏_{j=0}^{k-1} f(ζ^{2j+1}) where k = num_splits
-    // This requires finding a primitive root mod q
-
-    // Conservative fallback: assume invertible if L1 norm is small enough
-    let l1_norm: i64 = diff.sparse_coeffs.iter().map(|(_, c)| c.abs()).sum();
-    l1_norm > 0 && l1_norm < (params.n as i64) / 2
+    l1_norm > 0 && l1_norm < params.n as i64
 }
 
 /// Precomputed challenge set for small parameters
@@ -519,7 +466,7 @@ impl ChallengeSet {
             for c2 in challenges.iter().skip(i + 1) {
                 let diff = c1.sub(c2);
                 debug_assert!(
-                    is_difference_invertible(&diff, &params),
+                    is_definitely_difference_invertible(&diff, &params),
                     "Theorem 3.1 violated: difference not invertible"
                 );
             }
@@ -707,7 +654,7 @@ mod tests {
                 let diff = c1.sub(&c2);
                 // For small omega relative to n, differences should be invertible
                 assert!(
-                    is_difference_invertible(&diff, &params),
+                    is_definitely_difference_invertible(&diff, &params),
                     "Difference should be invertible: {:?}",
                     diff
                 );
@@ -716,7 +663,7 @@ mod tests {
     }
 
     #[test]
-    fn test_check_invertibility_by_evaluation() {
+    fn test_invertibility() {
         let params = SplittingParams {
             n: 64,
             num_splits: 64,
@@ -728,102 +675,85 @@ mod tests {
         // ===== Zero challenge: NOT invertible =====
         let zero = Challenge::zero(64);
         assert!(
-            !is_difference_invertible(&zero, &params),
+            !is_definitely_difference_invertible(&zero, &params),
             "Zero should not be invertible"
         );
 
-        // ===== Small weight with non-zero constant term: invertible =====
+        // ===== Constant-only challenges: invertible =====
+        let const_only = Challenge::new(vec![(0, 1)], 64);
+        assert!(
+            is_definitely_difference_invertible(&const_only, &params),
+            "Constant polynomial should be invertible"
+        );
+
+        let neg_const = Challenge::new(vec![(0, -1)], 64);
+        assert!(
+            is_definitely_difference_invertible(&neg_const, &params),
+            "Negative constant should be invertible"
+        );
+
+        // ===== Small weight with constant term: invertible =====
         // weight = 2 <= n/4 = 16, has constant term
         let small_with_const = Challenge::new(vec![(0, 1), (5, -1)], 64);
         assert!(
-            is_difference_invertible(&small_with_const, &params),
+            is_definitely_difference_invertible(&small_with_const, &params),
             "Small weight with constant term should be invertible"
         );
 
-        // ===== Small weight WITHOUT constant term =====
-        // This tests the fallback L1 check
+        // ===== Small weight WITHOUT constant term: tests L1 check =====
         let small_no_const = Challenge::new(vec![(3, 1), (7, -1)], 64);
         // L1 = 2 < n/2 = 32, should be invertible
         assert!(
-            is_difference_invertible(&small_no_const, &params),
+            is_definitely_difference_invertible(&small_no_const, &params),
             "Small L1 norm without constant should be invertible"
         );
 
-        // ===== Single non-zero coefficient (not constant) =====
+        // ===== Single non-zero coefficient (monomials): invertible =====
         let single_coeff = Challenge::new(vec![(10, 1)], 64);
-        // weight = 1 <= 16, no constant term, but L1 = 1 < 32
         assert!(
-            is_difference_invertible(&single_coeff, &params),
+            is_definitely_difference_invertible(&single_coeff, &params),
             "Single coefficient should be invertible via L1 check"
         );
 
-        // ===== Larger weight, still small L1 =====
+        let x_mono = Challenge::new(vec![(1, 1)], 64);
+        assert!(
+            is_definitely_difference_invertible(&x_mono, &params),
+            "X should be invertible (small L1)"
+        );
+
+        let high_mono = Challenge::new(vec![(63, 1)], 64);
+        assert!(
+            is_definitely_difference_invertible(&high_mono, &params),
+            "X^(n-1) should be invertible (small L1)"
+        );
+
+        // ===== Medium weight, still small L1: invertible =====
         // weight = 10 <= 16, no constant, L1 = 10 < 32
         let medium_weight: Vec<(usize, i64)> = (1..=10).map(|i| (i, 1)).collect();
         let medium = Challenge::new(medium_weight, 64);
         assert!(
-            is_difference_invertible(&medium, &params),
+            is_definitely_difference_invertible(&medium, &params),
             "Medium weight with small L1 should be invertible"
         );
 
-        // ===== Test that the L1 < n fast path works =====
+        // ===== Sum of powers: invertible =====
+        // weight = 8 <= 16, has constant, should be invertible
+        let sum_powers: Vec<(usize, i64)> = (0..8).map(|i| (i, 1)).collect();
+        let sum_poly = Challenge::new(sum_powers, 64);
+        assert!(
+            is_definitely_difference_invertible(&sum_poly, &params),
+            "1 + X + ... + X^7 should be invertible"
+        );
+
+        // ===== Test L1 < n fast path =====
         // Create challenge with L1 < n but > n/2
         // weight = 20 > 16, no constant, L1 = 40 < 64 but > 32
         let large_weight: Vec<(usize, i64)> = (1..=20).map(|i| (i, 2)).collect();
         let large = Challenge::new(large_weight, 64);
-        // This should pass the first check (L1 < n) in is_difference_invertible
         // L1 = 40 < 64, so fast path returns true
         assert!(
-            is_difference_invertible(&large, &params),
+            is_definitely_difference_invertible(&large, &params),
             "L1 < n should pass fast path"
-        );
-    }
-
-    #[test]
-    fn test_invertibility_edge_cases() {
-        let params = SplittingParams {
-            n: 64,
-            num_splits: 64,
-            tau: 1,
-            omega: 8,
-            modulus: 65537,
-        };
-
-        // ===== Constant-only challenge: invertible =====
-        let const_only = Challenge::new(vec![(0, 1)], 64);
-        assert!(
-            is_difference_invertible(&const_only, &params),
-            "Constant polynomial should be invertible"
-        );
-
-        // ===== Negative constant =====
-        let neg_const = Challenge::new(vec![(0, -1)], 64);
-        assert!(
-            is_difference_invertible(&neg_const, &params),
-            "Negative constant should be invertible"
-        );
-
-        // ===== X (monomial) =====
-        let x_mono = Challenge::new(vec![(1, 1)], 64);
-        assert!(
-            is_difference_invertible(&x_mono, &params),
-            "X should be invertible (small L1)"
-        );
-
-        // ===== X^(n-1) (highest degree monomial) =====
-        let high_mono = Challenge::new(vec![(63, 1)], 64);
-        assert!(
-            is_difference_invertible(&high_mono, &params),
-            "X^(n-1) should be invertible (small L1)"
-        );
-
-        // ===== 1 + X + X^2 + ... + X^{k-1} for small k =====
-        let sum_powers: Vec<(usize, i64)> = (0..8).map(|i| (i, 1)).collect();
-        let sum_poly = Challenge::new(sum_powers, 64);
-        // weight = 8 <= 16, has constant, should be invertible
-        assert!(
-            is_difference_invertible(&sum_poly, &params),
-            "1 + X + ... + X^7 should be invertible"
         );
     }
 
