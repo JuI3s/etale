@@ -3,7 +3,7 @@ name = "lattice-crypto"
 version = "0.1.0"
 edition = "2021"
 description = "A general-purpose library for lattice-based cryptography, including polynomial commitments and zero-knowledge proof support"
-authors = ["Your Name <your.email@example.com>"]
+authors = ["Julius Zhang <juliuszh@alumni.stanford.edu>"]
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/yourusername/lattice-crypto"
 
