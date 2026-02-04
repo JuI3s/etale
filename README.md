@@ -9,9 +9,8 @@ Documentation available at https://jui3s.github.io/lattice-crypto/.
 ## Background
 
 - Conceptual framework and optimization — [math/](math/)
-
-- **[Trace pairing](math/trace-pairing.pdf)** — inner product recovery from the trace form on finite étale algebras, specializing to the self-dual basis in 2-power cyclotomic rings used by [Hachi](https://eprint.iacr.org/2026/156).
-- **[Tower trace computation](math/galois-tower.pdf)** — logarithmic-time field trace via transitivity over a tower of quadratic extensions. ~32× speedup for practical parameters.
+  - **[Trace pairing](math/trace-pairing.pdf)** — inner product recovery from the trace form on finite étale algebras, specializing to the self-dual basis in 2-power cyclotomic rings used by [Hachi](https://eprint.iacr.org/2026/156).
+  - **[Tower trace computation](math/galois-tower.pdf)** — logarithmic-time field trace via transitivity over a tower of quadratic extensions. ~32× speedup for practical parameters.
 
 ## Features
 
