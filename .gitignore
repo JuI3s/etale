@@ -2,3 +2,5 @@
 .vscode
 /book/build
 /book/book
+
+.DS_Store
