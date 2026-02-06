@@ -5,7 +5,7 @@
 //! Run with `RUST_LOG=info cargo run --example fiat_shamir_demo` to see output.
 //! For more verbose output, use `RUST_LOG=debug`.
 
-use lattice_crypto::*;
+use etale::*;
 use log::info;
 use rand::SeedableRng;
 use rand_chacha::ChaCha20Rng;

@@ -1,4 +1,4 @@
-# Lattice Crypto
+# Étale
 
 Rust implementation of lattice-based cryptographic primitives for zero-knowledge proofs.
 
@@ -6,7 +6,7 @@ Rust implementation of lattice-based cryptographic primitives for zero-knowledge
 
 ```toml
 [dependencies]
-lattice-crypto = { path = "." }
+etale = { path = "." }
 ```
 
 ## Modules

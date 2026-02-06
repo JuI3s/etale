@@ -1,4 +1,4 @@
-//! # Lattice Cryptography Library
+//! # Étale
 //!
 //! A general-purpose library for lattice-based cryptography, including:
 //!

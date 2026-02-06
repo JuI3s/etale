@@ -1,4 +1,4 @@
-# lattice-crypto
+# etale
 
 Lattice-based cryptography primitives. Every security claim in this library is proved and cited. No folklore.
 
@@ -27,7 +27,7 @@ Rejection sampling for zero-knowledge applications.
 
 ## Documentation
 
-Documentation available at https://jui3s.github.io/lattice-crypto/.
+Documentation available at https://jui3s.github.io/etale/.
 
 > **⚠️ Work in progress.** This library is experimental and under active development—APIs may change without notice. 
 

@@ -3,7 +3,7 @@
 ## Create Splitting Parameters
 
 ```rust
-use lattice_crypto::lattice::splitting::SplittingParams;
+use etale::lattice::splitting::SplittingParams;
 
 // Manually specify num_splits
 let params = SplittingParams::power_of_two(256, 256, 1, 60, 8380417);

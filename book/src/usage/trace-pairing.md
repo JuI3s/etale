@@ -6,10 +6,10 @@ Theory: [trace-pairing.pdf](../../math/trace-pairing.pdf).
 ## API
 
 ```rust,ignore
-use lattice_crypto::lattice::pairing::{
+use etale::lattice::pairing::{
     TracePairingParams, pack, inner_product_from_trace,
 };
-use lattice_crypto::lattice::trace::GaloisSubgroup;
+use etale::lattice::trace::GaloisSubgroup;
 
 // Setup parameters (Hachi: d=1024, k=4)
 let params = TracePairingParams::hachi();

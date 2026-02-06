@@ -6,10 +6,10 @@
 //! # Example
 //!
 //! ```
-//! use lattice_crypto::lattice::pairing::{
+//! use etale::lattice::pairing::{
 //!     TracePairingParams, pack, inner_product_from_trace, direct_inner_product,
 //! };
-//! use lattice_crypto::lattice::trace::GaloisSubgroup;
+//! use etale::lattice::trace::GaloisSubgroup;
 //! use ark_ff::Field;
 //!
 //! // Use a small test field (Fp64 with prime modulus)

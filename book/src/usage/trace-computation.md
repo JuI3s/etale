@@ -3,7 +3,7 @@
 ## Create a Ring Element
 
 ```rust
-use lattice_crypto::lattice::trace::CyclotomicRingElement;
+use etale::lattice::trace::CyclotomicRingElement;
 
 let coeffs = vec![1, 2, 3, 0, 0, 0, 0, 0];
 let x = CyclotomicRingElement::new(coeffs, 8);
@@ -12,7 +12,7 @@ let x = CyclotomicRingElement::new(coeffs, 8);
 ## Define a Galois Subgroup
 
 ```rust
-use lattice_crypto::lattice::trace::GaloisSubgroup;
+use etale::lattice::trace::GaloisSubgroup;
 
 let n = 256;
 let k = 1;
@@ -24,7 +24,7 @@ println!("Order: {}", subgroup.order());
 ## Compute the Trace
 
 ```rust
-use lattice_crypto::lattice::trace::TraceComputer;
+use etale::lattice::trace::TraceComputer;
 
 let computer = TraceComputer::new(n);
 let subgroup = GaloisSubgroup::standard_subgroup(n, 1);

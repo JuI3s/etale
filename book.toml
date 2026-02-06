@@ -1,5 +1,5 @@
 [book]
-title = "Lattice Crypto"
+title = "Étale"
 authors = ["Julius Zhang"]
 language = "en"
 src = "book/src"
@@ -10,8 +10,8 @@ build-dir = "book/build"
 [output.html]
 default-theme = "light"
 preferred-dark-theme = "ayu"
-git-repository-url = "https://github.com/juliuszhang/lattice-crypto"
-edit-url-template = "https://github.com/juliuszhang/lattice-crypto/edit/main/{path}"
+git-repository-url = "https://github.com/juliuszhang/etale"
+edit-url-template = "https://github.com/juliuszhang/etale/edit/main/{path}"
 
 [output.html.search]
 enable = true

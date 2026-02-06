@@ -3,7 +3,7 @@
 ## Sample a Random Challenge
 
 ```rust
-use lattice_crypto::lattice::splitting::sample_challenge;
+use etale::lattice::splitting::sample_challenge;
 use rand::thread_rng;
 
 let mut rng = thread_rng();
@@ -18,7 +18,7 @@ println!("Weight: {}", challenge.weight());
 ## Deterministic Challenge from Seed
 
 ```rust
-use lattice_crypto::lattice::splitting::challenge_from_seed;
+use etale::lattice::splitting::challenge_from_seed;
 
 let seed = b"my-seed-bytes";
 let challenge = challenge_from_seed(seed, 256, 1, 60);
@@ -37,7 +37,7 @@ let sum = c1.add(&c2);
 ## Build a Challenge Set
 
 ```rust
-use lattice_crypto::lattice::splitting::{ChallengeSet, SplittingParams};
+use etale::lattice::splitting::{ChallengeSet, SplittingParams};
 
 let params = SplittingParams::with_computed_splits(256, 1, 60, 8380417);
 let challenge_set = ChallengeSet::build(params, 100);

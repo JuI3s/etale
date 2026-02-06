@@ -2,7 +2,7 @@
 
 use ark_ff::fields::models::fp::{Fp64, MontBackend, MontConfig};
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
-use lattice_crypto::lattice::trace::{
+use etale::lattice::trace::{
     trace_naive, trace_tower, CyclotomicRingElement, GaloisSubgroup,
 };
 use rand::thread_rng;
