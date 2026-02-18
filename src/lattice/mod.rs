@@ -3,6 +3,7 @@
 //! This module provides fundamental data structures for working with lattices,
 //! including vectors and matrices over Z_q.
 
+pub mod decompose;
 pub mod matrix;
 pub mod modular;
 pub mod ntt;

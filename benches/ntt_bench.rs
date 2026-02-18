@@ -1,17 +1,15 @@
 //! NTT and Ring Arithmetic Benchmarks
 //!
-//! Micro-benchmarks for ring operations across different parameter regimes,
-//! designed to evaluate trace compression performance for lattice-based
-//! polynomial commitments.
+//! Micro-benchmarks for ring operations across different parameter regimes
+//! for lattice-based polynomial commitments.
 //!
 //! Reference: Hachi (https://eprint.iacr.org/2026/156)
 
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
+use etale::lattice::decompose::{decompose_poly, recompose_poly};
 use etale::lattice::ntt::{
-    compute_tower_coset_reps, decompose_poly, enumerate_subgroup, recompose_poly, sparse_mul,
-    trace_naive, trace_tower, NttTables, RingElement, RingParams, SparseChallenge,
-    COMPRESSED_K16, COMPRESSED_K32, COMPRESSED_K4, COMPRESSED_K8, DILITHIUM_2, FALCON_512,
-    GREYHOUND, HACHI,
+    sparse_mul, NttTables, RingElement, RingParams, SparseChallenge, COMPRESSED_K16,
+    COMPRESSED_K32, COMPRESSED_K4, COMPRESSED_K8, DILITHIUM_2, FALCON_512, GREYHOUND, HACHI,
 };
 use rand::SeedableRng;
 use rand_chacha::ChaCha8Rng;
@@ -245,115 +243,6 @@ fn bench_ntt_inverse(c: &mut Criterion) {
 }
 
 // ============================================================================
-// Automorphism Benchmarks
-// ============================================================================
-
-/// Benchmark automorphism σ_k
-fn bench_automorphism(c: &mut Criterion) {
-    let mut group = c.benchmark_group("automorphism");
-    let mut rng = bench_rng();
-
-    let dims = [64, 128, 256, 512, 1024];
-    let q = HACHI.q;
-
-    // Common automorphisms used in trace computation
-    let automorphisms = [
-        (3, "σ_3"),
-        (17, "σ_17"),
-        (65, "σ_65"),
-    ];
-
-    for &d in &dims {
-        let a = RingElement::random(&mut rng, d, q);
-
-        for &(k, name) in &automorphisms {
-            let k = k % (2 * d); // Ensure valid automorphism
-
-            group.throughput(Throughput::Elements(d as u64));
-            group.bench_with_input(
-                BenchmarkId::new(format!("d={}", d), name),
-                &(a.clone(), k),
-                |bench, (a, k)| bench.iter(|| a.automorphism(black_box(*k))),
-            );
-        }
-    }
-
-    group.finish();
-}
-
-// ============================================================================
-// Trace Computation Benchmarks
-// ============================================================================
-
-/// Benchmark tower-optimized trace vs naive
-fn bench_trace(c: &mut Criterion) {
-    let mut group = c.benchmark_group("trace");
-    let mut rng = bench_rng();
-
-    let q = HACHI.q;
-    let d = 1024;
-
-    // Different compression factors
-    let compression_factors = [4, 8, 16, 32];
-
-    for &k in &compression_factors {
-        let coset_reps = compute_tower_coset_reps(d, k);
-        let subgroup = enumerate_subgroup(d, k);
-        let x = RingElement::random(&mut rng, d, q);
-
-        group.bench_with_input(
-            BenchmarkId::new("tower", format!("k={}", k)),
-            &(x.clone(), coset_reps.clone()),
-            |bench, (x, reps)| bench.iter(|| trace_tower(black_box(x), black_box(reps))),
-        );
-
-        // Only benchmark naive for small subgroups (too slow otherwise)
-        if k <= 16 {
-            group.bench_with_input(
-                BenchmarkId::new("naive", format!("k={}", k)),
-                &(x, subgroup),
-                |bench, (x, subgroup)| bench.iter(|| trace_naive(black_box(x), black_box(subgroup))),
-            );
-        }
-    }
-
-    group.finish();
-}
-
-/// Benchmark trace at Hachi parameters (d=1024, k=4 → |H|=256)
-fn bench_trace_hachi_params(c: &mut Criterion) {
-    let mut group = c.benchmark_group("trace_hachi");
-    let mut rng = bench_rng();
-
-    // Hachi: d=1024, extension field k_ext=4
-    // Compression to R_q^H where |H| = d/k_ext = 256
-    let d = 1024;
-    let k_ext = 4;
-    let compression_factor = d / k_ext; // 256
-    let q = HACHI.q;
-
-    let coset_reps = compute_tower_coset_reps(d, compression_factor);
-    let x = RingElement::random(&mut rng, d, q);
-
-    // Tower: log_2(256) = 8 automorphisms
-    group.bench_function("tower_8_levels", |bench| {
-        bench.iter(|| trace_tower(black_box(&x), black_box(&coset_reps)))
-    });
-
-    // Report theoretical speedup
-    let naive_ops = compression_factor;
-    let tower_ops = (compression_factor as f64).log2() as usize;
-    println!(
-        "Theoretical speedup: {}× ({} automorphisms → {})",
-        naive_ops / tower_ops,
-        naive_ops,
-        tower_ops
-    );
-
-    group.finish();
-}
-
-// ============================================================================
 // Decomposition Benchmarks
 // ============================================================================
 
@@ -478,19 +367,6 @@ criterion_group!(
 );
 
 criterion_group!(
-    name = automorphisms;
-    config = Criterion::default();
-    targets = bench_automorphism
-);
-
-criterion_group!(
-    name = trace_ops;
-    config = Criterion::default();
-    targets = bench_trace,
-              bench_trace_hachi_params
-);
-
-criterion_group!(
     name = decomposition;
     config = Criterion::default();
     targets = bench_decompose,
@@ -501,8 +377,6 @@ criterion_main!(
     ring_arithmetic,
     sparse_ops,
     ntt_transforms,
-    automorphisms,
-    trace_ops,
     decomposition
 );
 

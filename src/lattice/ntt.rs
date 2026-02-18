@@ -247,37 +247,6 @@ impl RingElement {
 
         Self { coeffs: result, d, q }
     }
-
-    /// Apply automorphism σ_k: X ↦ X^k
-    ///
-    /// Requires: k odd, gcd(k, 2d) = 1
-    ///
-    /// For X^j ↦ X^{kj mod 2d}, with sign from reduction mod (X^d + 1)
-    pub fn automorphism(&self, k: usize) -> Self {
-        let d = self.d;
-        let two_d = 2 * d;
-        let mut result = vec![0u64; d];
-
-        for (j, &coeff) in self.coeffs.iter().enumerate() {
-            if coeff == 0 {
-                continue;
-            }
-            let exp = (k * j) % two_d;
-            let idx = exp % d;
-            if exp < d {
-                result[idx] = add_mod(result[idx], coeff, self.q);
-            } else {
-                // X^{d+r} ≡ -X^r mod (X^d + 1)
-                result[idx] = sub_mod(result[idx], coeff, self.q);
-            }
-        }
-
-        Self {
-            coeffs: result,
-            d,
-            q: self.q,
-        }
-    }
 }
 
 // ============================================================================
@@ -357,85 +326,6 @@ pub fn sparse_mul(f: &RingElement, g: &SparseChallenge) -> RingElement {
         .collect();
 
     RingElement { coeffs, d, q }
-}
-
-// ============================================================================
-// Base-b Decomposition
-// ============================================================================
-
-/// Decompose integer a into base-b digits
-///
-/// Returns δ digits in {0, ..., b-1} such that a = Σ digits[i] · b^i
-pub fn decompose_scalar(a: u64, b: u64, delta: usize) -> Vec<u64> {
-    let mut digits = Vec::with_capacity(delta);
-    let mut rem = a;
-    for _ in 0..delta {
-        digits.push(rem % b);
-        rem /= b;
-    }
-    digits
-}
-
-/// Optimized base-16 decomposition using bit operations
-#[inline]
-pub fn decompose_base_16(a: u32) -> [u8; 8] {
-    [
-        (a & 0xF) as u8,
-        ((a >> 4) & 0xF) as u8,
-        ((a >> 8) & 0xF) as u8,
-        ((a >> 12) & 0xF) as u8,
-        ((a >> 16) & 0xF) as u8,
-        ((a >> 20) & 0xF) as u8,
-        ((a >> 24) & 0xF) as u8,
-        ((a >> 28) & 0xF) as u8,
-    ]
-}
-
-/// Decompose polynomial coefficient-wise
-///
-/// Returns δ polynomials, each with coefficients in {0, ..., b-1}
-pub fn decompose_poly(f: &RingElement, b: u64, delta: usize) -> Vec<RingElement> {
-    let d = f.d;
-    let q = f.q;
-    let mut result: Vec<Vec<u64>> = vec![vec![0; d]; delta];
-
-    for i in 0..d {
-        let digits = decompose_scalar(f.coeffs[i], b, delta);
-        for j in 0..delta {
-            result[j][i] = digits[j];
-        }
-    }
-
-    result
-        .into_iter()
-        .map(|coeffs| RingElement { coeffs, d, q })
-        .collect()
-}
-
-/// Recompose polynomial from base-b digits
-///
-/// Inverse of decompose_poly: f = Σ decomposed[i] · b^i
-pub fn recompose_poly(decomposed: &[RingElement], b: u64) -> RingElement {
-    assert!(!decomposed.is_empty());
-    let d = decomposed[0].d;
-    let q = decomposed[0].q;
-
-    let mut result = vec![0u64; d];
-    let mut power = 1u64;
-
-    for component in decomposed {
-        assert_eq!(component.d, d);
-        for i in 0..d {
-            result[i] = add_mod(
-                result[i],
-                mul_mod(component.coeffs[i], power, q),
-                q,
-            );
-        }
-        power = mul_mod(power, b, q);
-    }
-
-    RingElement { coeffs: result, d, q }
 }
 
 // ============================================================================
@@ -673,84 +563,6 @@ fn bit_reverse(x: usize, log_n: usize) -> usize {
 }
 
 // ============================================================================
-// Tower-Optimized Trace (uses automorphisms)
-// ============================================================================
-
-/// Compute coset representatives for tower-optimized trace
-///
-/// For compression factor k (power of 2), returns log_2(k) automorphism indices
-/// such that Tr_H = (1 + σ_{g_1})(1 + σ_{g_2})...(1 + σ_{g_t})
-pub fn compute_tower_coset_reps(d: usize, compression_k: usize) -> Vec<usize> {
-    assert!(d.is_power_of_two());
-    assert!(compression_k.is_power_of_two());
-    assert!(compression_k <= d);
-
-    let modulus = 2 * d;
-    let g: usize = 3; // Generator of (Z/2dZ)^×/{±1}
-
-    let levels = (compression_k as f64).log2() as usize;
-    let mut coset_reps = Vec::with_capacity(levels);
-
-    for level in 0..levels {
-        // At level i, coset rep is g^{d/(2^{i+1})} mod 2d
-        let exp = d / (1 << (level + 1));
-        let rep = pow_mod(g as u64, exp as u64, modulus as u64) as usize;
-        coset_reps.push(rep);
-    }
-
-    coset_reps
-}
-
-/// Tower-optimized trace computation
-///
-/// Computes Tr_H(x) = (1 + σ_{g_1})(1 + σ_{g_2})...(1 + σ_{g_t})(x)
-///
-/// Time: O(log|H| · d) instead of O(|H| · d) for naive
-pub fn trace_tower(x: &RingElement, coset_reps: &[usize]) -> RingElement {
-    let mut result = x.clone();
-
-    for &rep in coset_reps {
-        let sigma_result = result.automorphism(rep);
-        result = result.add(&sigma_result);
-    }
-
-    result
-}
-
-/// Naive trace computation: Tr_H(x) = Σ_{σ∈H} σ(x)
-///
-/// Time: O(|H| · d) - used for correctness testing
-pub fn trace_naive(x: &RingElement, subgroup_elements: &[usize]) -> RingElement {
-    let mut result = RingElement::zero(x.d, x.q);
-
-    for &sigma in subgroup_elements {
-        let sigma_x = x.automorphism(sigma);
-        result = result.add(&sigma_x);
-    }
-
-    result
-}
-
-/// Enumerate elements of subgroup H of order k in (Z/2dZ)^×
-pub fn enumerate_subgroup(d: usize, k: usize) -> Vec<usize> {
-    let modulus = 2 * d;
-    let g: usize = 3;
-
-    // H = <g^{d/k}> has order k
-    let step = d / k;
-    let gen = pow_mod(g as u64, step as u64, modulus as u64) as usize;
-
-    let mut elements = Vec::with_capacity(k);
-    let mut current = 1usize;
-    for _ in 0..k {
-        elements.push(current);
-        current = (current * gen) % modulus;
-    }
-
-    elements
-}
-
-// ============================================================================
 // Tests
 // ============================================================================
 
@@ -762,6 +574,48 @@ mod tests {
 
     fn test_rng() -> ChaCha8Rng {
         ChaCha8Rng::seed_from_u64(12345)
+    }
+
+    // ========================================================================
+    // Primitive Root of Unity Tests
+    // ========================================================================
+    //
+    // For negacyclic NTT over R_q = Z_q[X]/(X^d + 1), we need ψ where:
+    //   1. ψ^(2d) ≡ 1 (mod q)   -- ψ is a 2d-th root of unity
+    //   2. ψ^d ≡ -1 (mod q)     -- ψ is primitive (not a smaller root)
+    //
+    // These tests verify the standard ψ values from NIST specs.
+
+    /// Standard NTT parameters: (q, d, ψ, name)
+    const NTT_PARAMS: &[(u64, usize, u64, &str)] = &[
+        (8380417, 256, 1753, "Dilithium"),  // NIST ML-DSA
+        (12289, 512, 49, "Falcon"),         // NIST Falcon
+    ];
+
+    /// Assert that ψ is a valid primitive 2d-th root of unity for the given parameters.
+    fn assert_primitive_root(q: u64, d: usize, psi: u64, name: &str) {
+        // ψ^(2d) ≡ 1 (mod q) -- 2d-th root of unity
+        let psi_2d = pow_mod(psi, 2 * d as u64, q);
+        assert_eq!(psi_2d, 1, "{}: ψ^(2d) should be 1 mod q", name);
+
+        // ψ^d ≡ -1 (mod q) -- primitive (not a d-th root)
+        let psi_d = pow_mod(psi, d as u64, q);
+        assert_eq!(psi_d, q - 1, "{}: ψ^d should be -1 mod q", name);
+
+        // q ≡ 1 (mod 2d) -- NTT-friendly condition
+        assert_eq!(q % (2 * d as u64), 1, "{}: q should be ≡ 1 (mod 2d)", name);
+    }
+
+    #[test]
+    fn test_primitive_root_dilithium() {
+        let (q, d, psi, name) = NTT_PARAMS[0];
+        assert_primitive_root(q, d, psi, name);
+    }
+
+    #[test]
+    fn test_primitive_root_falcon() {
+        let (q, d, psi, name) = NTT_PARAMS[1];
+        assert_primitive_root(q, d, psi, name);
     }
 
     #[test]
@@ -815,31 +669,6 @@ mod tests {
     }
 
     #[test]
-    fn test_automorphism_identity() {
-        let mut rng = test_rng();
-        let d = 64;
-        let q = 3329u64;
-
-        let a = RingElement::random(&mut rng, d, q);
-        let sigma_1 = a.automorphism(1);
-        assert_eq!(a, sigma_1);
-    }
-
-    #[test]
-    fn test_automorphism_neg1() {
-        let d = 8;
-        let q = 17u64;
-
-        // σ_{-1}: X ↦ X^{-1} = X^{2d-1}
-        // For a = X, σ_{-1}(X) = X^{-1 mod 16} = X^{15} ≡ X^{15 mod 8} * sign
-        // X^{15} = X^8 · X^7 ≡ -X^7 mod (X^8 + 1)
-        let a = RingElement::new(vec![0, 1, 0, 0, 0, 0, 0, 0], d, q);
-        let sigma = a.automorphism(2 * d - 1); // -1 mod 2d
-
-        assert_eq!(sigma.coeffs[7], q - 1); // -1 mod q
-    }
-
-    #[test]
     fn test_sparse_mul() {
         let d = 64;
         let q = 3329u64;
@@ -854,28 +683,6 @@ mod tests {
         let schoolbook_result = f.mul_schoolbook(&dense_g);
 
         assert_eq!(sparse_result, schoolbook_result);
-    }
-
-    #[test]
-    fn test_decompose_recompose() {
-        let d = 32;
-        let q = 4294967197u64;
-        let b = 16u64;
-        let delta = 8;
-        let mut rng = test_rng();
-
-        let f = RingElement::random(&mut rng, d, q);
-        let decomposed = decompose_poly(&f, b, delta);
-        let recomposed = recompose_poly(&decomposed, b);
-
-        assert_eq!(f, recomposed);
-
-        // Check all decomposed coefficients are < b
-        for comp in &decomposed {
-            for &c in &comp.coeffs {
-                assert!(c < b);
-            }
-        }
     }
 
     #[test]
@@ -933,34 +740,6 @@ mod tests {
         let schoolbook_result = a.mul_schoolbook(&b);
 
         assert_eq!(ntt_result, schoolbook_result);
-    }
-
-    #[test]
-    fn test_tower_coset_reps() {
-        let d = 1024;
-        let k = 16;
-
-        let reps = compute_tower_coset_reps(d, k);
-        // log_2(16) = 4 levels
-        assert_eq!(reps.len(), 4);
-    }
-
-    #[test]
-    fn test_trace_tower_vs_naive() {
-        let d = 64;
-        let k = 8;
-        let q = 3329u64;
-        let mut rng = test_rng();
-
-        let coset_reps = compute_tower_coset_reps(d, k);
-        let subgroup = enumerate_subgroup(d, k);
-
-        for _ in 0..5 {
-            let x = RingElement::random(&mut rng, d, q);
-            let tower_result = trace_tower(&x, &coset_reps);
-            let naive_result = trace_naive(&x, &subgroup);
-            assert_eq!(tower_result, naive_result);
-        }
     }
 }
 
