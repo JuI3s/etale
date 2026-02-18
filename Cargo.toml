@@ -24,3 +24,7 @@ criterion = { version = "0.5", features = ["html_reports"] }
 name = "trace_bench"
 harness = false
 
+[[bench]]
+name = "ntt_bench"
+harness = false
+
