@@ -15,23 +15,31 @@
 use super::modular::{add_mod, mul_mod};
 use super::ntt::RingElement;
 
-/// Decompose integer a into base-b digits
+// ============================================================================
+// Scalar Decomposition
+// ============================================================================
+
+/// Decompose integer into base-b digits.
 ///
 /// Returns δ digits in {0, ..., b-1} such that a = Σ digits[i] · b^i
 #[inline]
-fn decompose_scalar(a: u64, b: u64, delta: usize) -> Vec<u64> {
-    let mut digits = Vec::with_capacity(delta);
-    let mut rem = a;
-    for _ in 0..delta {
-        digits.push(rem % b);
-        rem /= b;
-    }
-    digits
+fn decompose_scalar(mut a: u64, b: u64, delta: usize) -> Vec<u64> {
+    (0..delta)
+        .map(|_| {
+            let digit = a % b;
+            a /= b;
+            digit
+        })
+        .collect()
 }
 
-/// Decompose polynomial coefficient-wise
+// ============================================================================
+// Polynomial Decomposition
+// ============================================================================
+
+/// Decompose polynomial coefficient-wise into base-b components.
 ///
-/// Returns δ polynomials, each with coefficients in {0, ..., b-1}
+/// Returns δ polynomials, each with coefficients in {0, ..., b-1}.
 ///
 /// # Example
 ///
@@ -39,44 +47,51 @@ fn decompose_scalar(a: u64, b: u64, delta: usize) -> Vec<u64> {
 /// - f = f_0 + f_1·16 + f_2·256 + ... + f_7·16^7
 /// - Each f_i has coefficients in {0, ..., 15}
 pub fn decompose_poly(f: &RingElement, b: u64, delta: usize) -> Vec<RingElement> {
-    let d = f.d;
-    let q = f.q;
-    let mut result: Vec<Vec<u64>> = vec![vec![0; d]; delta];
+    let (d, q) = (f.d, f.q);
 
-    for i in 0..d {
-        let digits = decompose_scalar(f.coeffs[i], b, delta);
-        for j in 0..delta {
-            result[j][i] = digits[j];
-        }
-    }
+    // Decompose each coefficient, then transpose to get δ polynomials
+    let all_digits: Vec<_> = f.coeffs.iter().map(|&c| decompose_scalar(c, b, delta)).collect();
 
-    result
-        .into_iter()
-        .map(|coeffs| RingElement { coeffs, d, q })
+    (0..delta)
+        .map(|j| {
+            let coeffs = all_digits.iter().map(|digits| digits[j]).collect();
+            RingElement { coeffs, d, q }
+        })
         .collect()
 }
 
-/// Recompose polynomial from base-b digits
+/// Recompose polynomial from base-b digit polynomials.
 ///
 /// Inverse of decompose_poly: f = Σ decomposed[i] · b^i
 pub fn recompose_poly(decomposed: &[RingElement], b: u64) -> RingElement {
-    assert!(!decomposed.is_empty());
-    let d = decomposed[0].d;
-    let q = decomposed[0].q;
+    let first = decomposed.first().expect("decomposed cannot be empty");
+    let (d, q) = (first.d, first.q);
 
-    let mut result = vec![0u64; d];
-    let mut power = 1u64;
+    // Fold over components, accumulating with powers of b
+    let coeffs = decomposed
+        .iter()
+        .enumerate()
+        .fold(vec![0u64; d], |mut acc, (i, component)| {
+            debug_assert_eq!(component.d, d, "dimension mismatch");
+            let power = pow_of_b(b, i, q);
+            acc.iter_mut()
+                .zip(&component.coeffs)
+                .for_each(|(a, &c)| *a = add_mod(*a, mul_mod(c, power, q), q));
+            acc
+        });
 
-    for component in decomposed {
-        assert_eq!(component.d, d);
-        for i in 0..d {
-            result[i] = add_mod(result[i], mul_mod(component.coeffs[i], power, q), q);
-        }
-        power = mul_mod(power, b, q);
-    }
-
-    RingElement { coeffs: result, d, q }
+    RingElement { coeffs, d, q }
 }
+
+/// Compute b^exp mod q efficiently.
+#[inline]
+fn pow_of_b(b: u64, exp: usize, q: u64) -> u64 {
+    (0..exp).fold(1u64, |acc, _| mul_mod(acc, b, q))
+}
+
+// ============================================================================
+// Tests
+// ============================================================================
 
 #[cfg(test)]
 mod tests {
@@ -86,6 +101,15 @@ mod tests {
 
     fn test_rng() -> ChaCha8Rng {
         ChaCha8Rng::seed_from_u64(12345)
+    }
+
+    #[test]
+    fn test_decompose_scalar() {
+        // 255 = 15 + 15*16 in base 16
+        assert_eq!(decompose_scalar(255, 16, 2), vec![15, 15]);
+
+        // 256 = 0 + 0*16 + 1*256 in base 16
+        assert_eq!(decompose_scalar(256, 16, 3), vec![0, 0, 1]);
     }
 
     #[test]
@@ -99,27 +123,31 @@ mod tests {
         let f = RingElement::random(&mut rng, d, q);
         let decomposed = decompose_poly(&f, b, delta);
 
-        // Check that decomposed elements have small coefficients
+        // Verify small coefficients
         for component in &decomposed {
-            for &c in &component.coeffs {
-                assert!(c < b, "Decomposed coefficient {} >= base {}", c, b);
-            }
+            assert!(
+                component.coeffs.iter().all(|&c| c < b),
+                "Decomposed coefficient exceeds base"
+            );
         }
 
-        // Check roundtrip
+        // Verify roundtrip
         let recomposed = recompose_poly(&decomposed, b);
         assert_eq!(f.coeffs, recomposed.coeffs);
     }
 
     #[test]
-    fn test_decompose_scalar() {
-        // 255 = 15 + 15*16 in base 16
-        let digits = decompose_scalar(255, 16, 2);
-        assert_eq!(digits, vec![15, 15]);
+    fn test_decompose_single_coeff() {
+        let q = 1000;
+        let b = 10u64;
+        let delta = 3;
 
-        // 256 = 0 + 0*16 + 1*256 in base 16
-        let digits = decompose_scalar(256, 16, 3);
-        assert_eq!(digits, vec![0, 0, 1]);
+        // 123 = 3 + 2*10 + 1*100
+        let f = RingElement::new(vec![123], 1, q);
+        let decomposed = decompose_poly(&f, b, delta);
+
+        assert_eq!(decomposed[0].coeffs[0], 3);
+        assert_eq!(decomposed[1].coeffs[0], 2);
+        assert_eq!(decomposed[2].coeffs[0], 1);
     }
 }
-

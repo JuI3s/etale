@@ -8,7 +8,7 @@
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use etale::lattice::decompose::{decompose_poly, recompose_poly};
 use etale::lattice::ntt::{
-    sparse_mul, NttTables, RingElement, RingParams, SparseChallenge, COMPRESSED_K16,
+    sparse_mul, NttTables, RingElement, RingParams, SparseTernary, COMPRESSED_K16,
     COMPRESSED_K32, COMPRESSED_K4, COMPRESSED_K8, DILITHIUM_2, FALCON_512, GREYHOUND, HACHI,
 };
 use rand::SeedableRng;
@@ -125,7 +125,7 @@ fn bench_sparse_mul(c: &mut Criterion) {
             }
 
             let f = RingElement::random(&mut rng, d, q);
-            let g = SparseChallenge::random(&mut rng, d, c_nonzero);
+            let g = SparseTernary::random(&mut rng, d, c_nonzero);
 
             group.throughput(Throughput::Elements((c_nonzero * d) as u64));
             group.bench_with_input(
@@ -150,8 +150,14 @@ fn bench_sparse_vs_schoolbook(c: &mut Criterion) {
     let q = HACHI.q;
 
     let f = RingElement::random(&mut rng, d, q);
-    let g_sparse = SparseChallenge::random(&mut rng, d, c_nonzero);
-    let g_dense = g_sparse.to_ring_element(q);
+    let g_sparse = SparseTernary::random(&mut rng, d, c_nonzero);
+    let g_dense = {
+        let mut coeffs = vec![0i64; d];
+        for &(idx, sign) in &g_sparse.entries {
+            coeffs[idx] = sign as i64;
+        }
+        RingElement::from_signed(coeffs, d, q)
+    };
 
     group.bench_function("sparse_c16", |bench| {
         bench.iter(|| sparse_mul(black_box(&f), black_box(&g_sparse)))
