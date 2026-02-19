@@ -95,7 +95,7 @@ fn bench_ring_mul_small_operand(c: &mut Criterion) {
 
         group.throughput(Throughput::Elements(d as u64));
         group.bench_with_input(
-            BenchmarkId::new("schoolbook", format!("d={}", d)),
+            BenchmarkId::new("schoolbook", format!("d={d}")),
             &(a, b),
             |bench, (a, b)| bench.iter(|| a.mul_schoolbook(black_box(b))),
         );
@@ -129,7 +129,7 @@ fn bench_sparse_mul(c: &mut Criterion) {
 
             group.throughput(Throughput::Elements((c_nonzero * d) as u64));
             group.bench_with_input(
-                BenchmarkId::new(format!("d={}", d), format!("c={}", c_nonzero)),
+                BenchmarkId::new(format!("d={d}"), format!("c={c_nonzero}")),
                 &(f, g),
                 |bench, (f, g)| bench.iter(|| sparse_mul(black_box(f), black_box(g))),
             );
@@ -160,11 +160,11 @@ fn bench_sparse_vs_schoolbook(c: &mut Criterion) {
     };
 
     group.bench_function("sparse_c16", |bench| {
-        bench.iter(|| sparse_mul(black_box(&f), black_box(&g_sparse)))
+        bench.iter(|| sparse_mul(black_box(&f), black_box(&g_sparse)));
     });
 
     group.bench_function("schoolbook", |bench| {
-        bench.iter(|| f.mul_schoolbook(black_box(&g_dense)))
+        bench.iter(|| f.mul_schoolbook(black_box(&g_dense)));
     });
 
     group.finish();
@@ -198,7 +198,7 @@ fn bench_ntt_forward(c: &mut Criterion) {
                         coeffs
                     },
                     criterion::BatchSize::SmallInput,
-                )
+                );
             },
         );
     }
@@ -234,7 +234,7 @@ fn bench_ntt_inverse(c: &mut Criterion) {
                         coeffs
                     },
                     criterion::BatchSize::SmallInput,
-                )
+                );
             },
         );
     }
@@ -317,7 +317,7 @@ fn bench_ring_mul_comparison(c: &mut Criterion) {
         let b = RingElement::random(&mut rng, d, q);
 
         group.bench_with_input(
-            BenchmarkId::new("schoolbook", format!("d={}", d)),
+            BenchmarkId::new("schoolbook", format!("d={d}")),
             &(a, b),
             |bench, (a, b)| bench.iter(|| a.mul_schoolbook(black_box(b))),
         );

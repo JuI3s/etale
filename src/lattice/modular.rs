@@ -223,9 +223,9 @@ mod tests {
         assert_eq!(mul_mod(3, 6, q), 1); // 18 mod 17 = 1
 
         // Test no overflow for large values
-        let big_q = 4294967197u64;
-        let a = 4000000000u64;
-        let b = 3000000000u64;
+        let big_q = 4_294_967_197_u64;
+        let a = 4_000_000_000_u64;
+        let b = 3_000_000_000_u64;
         let result = mul_mod(a, b, big_q);
         assert!(result < big_q);
     }
@@ -248,7 +248,7 @@ mod tests {
         // Test for various values
         for a in 1..q {
             let inv = mod_inv(a, q);
-            assert_eq!(mul_mod(a, inv, q), 1, "Failed for a={}", a);
+            assert_eq!(mul_mod(a, inv, q), 1, "Failed for a={a}");
         }
     }
 
@@ -262,7 +262,7 @@ mod tests {
         assert_eq!(pow_mod(3, 16, q), 1); // Fermat's little theorem
 
         // Large exponent
-        let big_q = 8380417u64;
+        let big_q = 8_380_417_u64;
         assert_eq!(pow_mod(1753, 512, big_q), 1); // primitive 512th root
     }
 

@@ -253,8 +253,7 @@ impl IdentificationScheme {
                     return Some((commitment, challenge, z));
                 }
                 Response::Abort => {
-                    // Try again
-                    continue;
+                    // Try again (loop continues)
                 }
             }
         }
@@ -309,7 +308,7 @@ impl SignatureScheme {
                     return Some(Signature { w: commitment.w, z });
                 }
                 Response::Abort => {
-                    continue;
+                    // Rejection sampling: loop continues
                 }
             }
         }
@@ -431,12 +430,12 @@ mod tests {
         }
 
         // Basic uniformity check: mean should be close to 0
-        let sum: i64 = z_samples.iter().flat_map(|z| z.centered()).sum();
+        let sum: i64 = z_samples.iter().flat_map(Vector::centered).sum();
         let mean = sum as f64 / (z_samples.len() * params.n) as f64;
-        assert!(mean.abs() < 5.0, "Mean should be close to 0, got {}", mean);
+        assert!(mean.abs() < 5.0, "Mean should be close to 0, got {mean}");
 
         println!("Collected {} samples", z_samples.len());
-        println!("Mean coefficient: {:.2}", mean);
+        println!("Mean coefficient: {mean:.2}");
         println!("Abort rate: {:.2}%", scheme.stats.abort_rate() * 100.0);
     }
 
@@ -603,8 +602,8 @@ mod tests {
             .sum::<f64>()
             / z2_samples.len() as f64;
 
-        println!("Key 1 - Mean: {:.2}, Variance: {:.2}", mean1, var1);
-        println!("Key 2 - Mean: {:.2}, Variance: {:.2}", mean2, var2);
+        println!("Key 1 - Mean: {mean1:.2}, Variance: {var1:.2}");
+        println!("Key 2 - Mean: {mean2:.2}, Variance: {var2:.2}");
 
         // The means and variances should be similar (both close to uniform)
         assert!(

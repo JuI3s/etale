@@ -102,8 +102,7 @@ impl SplittingParams {
 
         (0..self.omega)
             .try_fold(1u128, |acc, _| acc.checked_mul(coeff_choices))
-            .map(|power| binomial.saturating_mul(power))
-            .unwrap_or(u128::MAX)
+            .map_or(u128::MAX, |power| binomial.saturating_mul(power))
     }
 
     /// Security level (floor of log2 of challenge set size)
@@ -448,7 +447,7 @@ pub fn dilithium_challenge_params() -> SplittingParams {
         num_splits: 256,
         tau: 1,
         omega: 60,
-        modulus: 8380417,
+        modulus: 8_380_417,
     }
 }
 
@@ -575,7 +574,7 @@ mod tests {
             num_splits: 64,
             tau: 1,
             omega: 32,
-            modulus: 8380417,
+            modulus: 8_380_417,
         };
         let size = params.challenge_set_size();
         assert!(size > 0);
@@ -633,7 +632,7 @@ mod tests {
     #[test]
     fn test_compute_num_splits() {
         // Dilithium: fully splits
-        assert_eq!(SplittingParams::compute_num_splits(256, 8380417), 256);
+        assert_eq!(SplittingParams::compute_num_splits(256, 8_380_417), 256);
         // Kyber: partially splits
         assert_eq!(SplittingParams::compute_num_splits(256, 3329), 128);
         // Fermat primes
@@ -647,7 +646,7 @@ mod tests {
 
     #[test]
     fn test_with_computed_splits() {
-        let params = SplittingParams::with_computed_splits(256, 1, 60, 8380417);
+        let params = SplittingParams::with_computed_splits(256, 1, 60, 8_380_417);
         assert_eq!(params.num_splits, 256);
         assert!(params.is_valid_num_splits());
 
@@ -663,7 +662,7 @@ mod tests {
             num_splits: 256,
             tau: 1,
             omega: 60,
-            modulus: 8380417,
+            modulus: 8_380_417,
         };
         assert!(valid.is_valid_num_splits());
 
@@ -672,7 +671,7 @@ mod tests {
             num_splits: 128,
             tau: 1,
             omega: 60,
-            modulus: 8380417,
+            modulus: 8_380_417,
         };
         assert!(!invalid.is_valid_num_splits());
     }

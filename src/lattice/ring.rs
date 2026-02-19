@@ -104,7 +104,9 @@ impl RingElement {
         let d = cyclotomic.degree();
         let mut c = coeffs;
         c.resize(d, 0);
-        c.iter_mut().for_each(|coeff| *coeff %= q);
+        for coeff in &mut c {
+            *coeff %= q;
+        }
         Self {
             coeffs: c,
             cyclotomic,

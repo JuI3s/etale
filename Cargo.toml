@@ -32,5 +32,22 @@ harness = false
 warnings = "deny"
 
 [lints.clippy]
-all = "warn"
+# Lint groups (set priority with .priority to avoid conflicts)
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+
+# Allow common patterns in math/crypto code
+many_single_char_names = "allow"  # f, g, d, q, n, m are standard math notation
+doc_markdown = "allow"            # backticks in docs not critical
+must_use_candidate = "allow"      # too noisy for now
+missing_panics_doc = "allow"      # debug_assert panics are intentional
+
+# Allow intentional patterns in modular arithmetic
+inline_always = "allow"           # hot-path functions need this
+cast_possible_truncation = "allow" # modular reduction is intentional
+cast_lossless = "allow"           # u64->u128 is fine, explicit for clarity
+cast_sign_loss = "allow"          # we handle signs explicitly in crypto code
+cast_possible_wrap = "allow"      # we handle signs explicitly in crypto code
+cast_precision_loss = "allow"     # f64 for display/stats is fine
+return_self_not_must_use = "allow" # builder pattern methods
 

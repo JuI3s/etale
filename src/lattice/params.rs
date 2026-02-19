@@ -119,7 +119,7 @@ pub fn find_primitive_2d_root(q: u64, d: usize) -> Option<u64> {
 /// Hachi polynomial commitment scheme parameters
 pub const HACHI: RingParams = RingParams {
     d: 1024,
-    q: 4294967197, // ≈ 2^32, prime, q ≢ 1 (mod 2048)
+    q: 4_294_967_197, // ≈ 2^32, prime, q ≢ 1 (mod 2048)
     kappa: 1,
     b: 16,
     delta: 8,
@@ -134,7 +134,7 @@ pub const HACHI: RingParams = RingParams {
 /// Compression k=4: d=256, beta_inf = 60
 pub const COMPRESSED_K4: RingParams = RingParams {
     d: 256,
-    q: 4294967197,
+    q: 4_294_967_197,
     kappa: 1,
     b: 16,
     delta: 8,
@@ -145,7 +145,7 @@ pub const COMPRESSED_K4: RingParams = RingParams {
 /// Compression k=8: d=128, beta_inf = 120
 pub const COMPRESSED_K8: RingParams = RingParams {
     d: 128,
-    q: 4294967197,
+    q: 4_294_967_197,
     kappa: 1,
     b: 16,
     delta: 8,
@@ -156,7 +156,7 @@ pub const COMPRESSED_K8: RingParams = RingParams {
 /// Compression k=16: d=64, beta_inf = 240 (THE SWEET SPOT)
 pub const COMPRESSED_K16: RingParams = RingParams {
     d: 64,
-    q: 4294967197,
+    q: 4_294_967_197,
     kappa: 1,
     b: 16,
     delta: 8,
@@ -167,7 +167,7 @@ pub const COMPRESSED_K16: RingParams = RingParams {
 /// Compression k=32: d=32, beta_inf = 480 (aggressive)
 pub const COMPRESSED_K32: RingParams = RingParams {
     d: 32,
-    q: 4294967197,
+    q: 4_294_967_197,
     kappa: 1,
     b: 16,
     delta: 8,
@@ -182,7 +182,7 @@ pub const COMPRESSED_K32: RingParams = RingParams {
 /// Greyhound polynomial commitment scheme parameters
 pub const GREYHOUND: RingParams = RingParams {
     d: 64,
-    q: 4294967197,
+    q: 4_294_967_197,
     kappa: 1,
     b: 256,
     delta: 4,
@@ -209,7 +209,7 @@ pub const KYBER_512: RingParams = RingParams {
 /// Primitive root: ψ = 1753
 pub const DILITHIUM_2: RingParams = RingParams {
     d: 256,
-    q: 8380417,
+    q: 8_380_417,
     kappa: 4,
     b: 2,
     delta: 23,
@@ -301,8 +301,8 @@ mod tests {
 
     #[test]
     fn test_compute_delta() {
-        assert_eq!(RingParams::compute_delta(4294967197, 16), 8);
-        assert_eq!(RingParams::compute_delta(4294967197, 256), 4);
+        assert_eq!(RingParams::compute_delta(4_294_967_197, 16), 8);
+        assert_eq!(RingParams::compute_delta(4_294_967_197, 256), 4);
         assert_eq!(RingParams::compute_delta(3329, 2), 12);
     }
 

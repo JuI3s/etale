@@ -12,7 +12,7 @@ pub struct Matrix {
 
 impl Matrix {
     pub fn new(rows: Vec<Vector>) -> Self {
-        let modulus = rows.first().map(|r| r.modulus).unwrap_or(1);
+        let modulus = rows.first().map_or(1, |r| r.modulus);
         Matrix { rows, modulus }
     }
 
@@ -37,7 +37,7 @@ impl Matrix {
     }
 
     pub fn num_cols(&self) -> usize {
-        self.rows.first().map(|r| r.len()).unwrap_or(0)
+        self.rows.first().map_or(0, Vector::len)
     }
 }
 

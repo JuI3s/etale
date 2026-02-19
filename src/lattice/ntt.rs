@@ -67,7 +67,9 @@ impl RingElement {
         debug_assert!(d.is_power_of_two(), "d must be power of two");
         let mut c = coeffs;
         c.resize(d, 0);
-        c.iter_mut().for_each(|coeff| *coeff %= q);
+        for coeff in &mut c {
+            *coeff %= q;
+        }
         Self { coeffs: c, d, q }
     }
 
@@ -506,7 +508,7 @@ mod tests {
 
     /// Standard NTT parameters: (q, d, ψ, name)
     const NTT_PARAMS: &[(u64, usize, u64, &str)] = &[
-        (8380417, 256, 1753, "Dilithium"),
+        (8_380_417, 256, 1753, "Dilithium"),
         (12289, 512, 49, "Falcon"),
     ];
 
@@ -583,7 +585,7 @@ mod tests {
 
     #[test]
     fn test_ntt_roundtrip_dilithium() {
-        let (d, q, psi) = (256, 8380417u64, 1753u64);
+        let (d, q, psi) = (256, 8_380_417_u64, 1753u64);
         let tables = NttTables::new(d, q, psi);
         let mut rng = test_rng();
 
@@ -613,7 +615,7 @@ mod tests {
 
     #[test]
     fn test_ntt_mul_vs_schoolbook() {
-        let (d, q, psi) = (256, 8380417u64, 1753u64);
+        let (d, q, psi) = (256, 8_380_417_u64, 1753u64);
         let tables = NttTables::new(d, q, psi);
         let mut rng = test_rng();
 

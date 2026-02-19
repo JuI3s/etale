@@ -29,7 +29,7 @@ fn bench_trace_naive(c: &mut Criterion) {
         let x = CyclotomicRingElement::<BenchFq>::random(&mut rng, d);
 
         group.bench_with_input(
-            BenchmarkId::from_parameter(format!("d={},k={}", d, k)),
+            BenchmarkId::from_parameter(format!("d={d},k={k}")),
             &(x, h),
             |b, (x, h)| b.iter(|| trace_naive(black_box(x), black_box(h))),
         );
@@ -47,7 +47,7 @@ fn bench_trace_tower(c: &mut Criterion) {
         let x = CyclotomicRingElement::<BenchFq>::random(&mut rng, d);
 
         group.bench_with_input(
-            BenchmarkId::from_parameter(format!("d={},k={}", d, k)),
+            BenchmarkId::from_parameter(format!("d={d},k={k}")),
             &(x, h),
             |b, (x, h)| b.iter(|| trace_tower(black_box(x), black_box(h))),
         );
@@ -66,8 +66,8 @@ fn bench_automorphism(c: &mut Criterion) {
 
             group.bench_with_input(
                 BenchmarkId::new(
-                    format!("d={},sigma={}", d, sigma),
-                    format!("dim_{}_sigma_{}", d, sigma),
+                    format!("d={d},sigma={sigma}"),
+                    format!("dim_{d}_sigma_{sigma}"),
                 ),
                 &x,
                 |b, x| b.iter(|| x.pow_automorphism(black_box(sigma))),
@@ -89,11 +89,11 @@ fn bench_trace_comparison_hachi_params(c: &mut Criterion) {
     let x = CyclotomicRingElement::<BenchFq>::random(&mut rng, d);
 
     group.bench_function("naive", |b| {
-        b.iter(|| trace_naive(black_box(&x), black_box(&h)))
+        b.iter(|| trace_naive(black_box(&x), black_box(&h)));
     });
 
     group.bench_function("tower", |b| {
-        b.iter(|| trace_tower(black_box(&x), black_box(&h)))
+        b.iter(|| trace_tower(black_box(&x), black_box(&h)));
     });
 
     group.finish();

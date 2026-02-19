@@ -5,7 +5,7 @@
 //! Run with `RUST_LOG=info cargo run --example fiat_shamir_demo` to see output.
 //! For more verbose output, use `RUST_LOG=debug`.
 
-use etale::*;
+use etale::{IdentificationScheme, IdentificationSchemeParameters, SignatureScheme};
 use log::info;
 use rand::SeedableRng;
 use rand_chacha::ChaCha20Rng;
@@ -61,7 +61,7 @@ fn demo_identification(rng: &mut ChaCha20Rng) {
         Some((commitment, challenge, z)) => {
             info!("  Commitment w = {}", commitment.w);
             info!("  Challenge c = {}", challenge.c);
-            info!("  Response z = {}", z);
+            info!("  Response z = {z}");
             info!("  ||z||_∞ = {}", z.ell_inf_norm());
 
             // Verify
