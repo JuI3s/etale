@@ -322,7 +322,7 @@ pub fn sparse_mul(f: &RingElement, g: &SparseTernary) -> RingElement {
 ///
 /// - [`super::trace`]: Galois tower trace works for arbitrary cyclotomics
 /// - [`super::ring`]: General cyclotomic rings without NTT restriction
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct NegacyclicNtt {
     pub d: usize,
     pub q: u64,

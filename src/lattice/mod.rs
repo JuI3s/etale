@@ -10,6 +10,7 @@ pub mod ntt;
 pub mod pairing;
 pub mod params;
 pub mod ring;
+pub mod ring_mul;
 pub mod splitting;
 pub mod trace;
 pub mod vector;
@@ -21,5 +22,6 @@ pub use params::{
     COMPRESSED_K8, DILITHIUM_2, FALCON_512, GREYHOUND, HACHI, HACHI_FAMILY, KYBER_512,
     NTT_FRIENDLY,
 };
+pub use ring_mul::{NttBackend, RingMulBackend, SchoolbookBackend};
 pub use splitting::{Challenge, ChallengeSet, SplittingParams};
 pub use vector::Vector;

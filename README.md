@@ -1,38 +1,36 @@
 # Étale
 
-Lattice-based cryptography primitives. Every security claim in this library is proved and cited. No folklore.
+Lattice-based cryptography primitives. Every security claim is proved and cited. No folklore.
 
 ## Background
 
-- Conceptual framework and optimization — [math/](math/)
-  - **[Trace pairing](math/trace-pairing.pdf)** — inner product recovery from the trace form on finite étale algebras, specializing to the self-dual basis in 2-power cyclotomic rings used by [Hachi](https://eprint.iacr.org/2026/156).
-  - **[Tower trace computation](math/galois-tower.pdf)** — logarithmic-time field trace via transitivity over a tower of quadratic extensions. ~32× speedup for practical parameters.
+- **[Trace pairing](math/trace-pairing.pdf)** — inner product recovery from the trace form on finite étale algebras, specializing to the orthogonla basis in 2-power cyclotomic rings.
+- **[Tower trace computation](math/galois-tower.pdf)** — logarithmic-time field trace via transitivity over a tower of quadratic extensions. ~32× speedup for practical parameters.
 
 ## Features
 
+### Ring Arithmetic
+NTT-based and schoolbook multiplication for cyclotomic rings R_q = Z_q[X]/(X^d + 1), sparse ternary multiplication for challenge polynomials, base-b decomposition and recomposition.
+
+### Ajtai Commitment
+Generic SIS-based commitment t = A·s with optional base-b decomposition for polynomial commitment schemes.
+
 ### Galois Tower Trace (32× speedup)
+Trace over Galois subgroup via index-2 tower decomposition. Measured 31.7× speedup (d=1024, k=4).
 
-Trace over Galois subgroup $H = \langle \sigma_{-1}, \sigma_{4k+1} \rangle$:
+### Parameter Database
+Hachi, Greyhound, compressed tiers (k=4,8,16,32), Dilithium, Falcon, Kyber.
 
-```
-Naive:  Tr_H(x) = Σ_{σ∈H} σ(x)              → 256 automorphisms
-Tower:  Tr_H(x) = (1+σ_{g₁})...(1+σ_{g₈})(x) → 8 automorphisms
-```
-
-Exploits index-2 subgroup tower for 2-groups. Measured 31.7× speedup (d=1024, k=4).
-
-### Rejection Sampling
-
-Rejection sampling for zero-knowledge applications.
+### Benchmarks
+Comprehensive criterion benchmarks: ring multiplication (schoolbook vs NTT), sparse multiplication, NTT transforms, decomposition, and commitment across all parameter sets.
 
 ## Documentation
 
-Documentation available at https://jui3s.github.io/etale/.
+🚧 Under construction — https://jui3s.github.io/etale/
 
-> **⚠️ Work in progress.** This library is experimental and under active development—APIs may change without notice. 
+> **⚠️ Work in progress.** Experimental, APIs may change.
 
 ## Usage
-
 ```bash
 cargo test --release
 cargo bench

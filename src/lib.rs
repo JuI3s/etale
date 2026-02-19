@@ -10,10 +10,10 @@
 //!
 //! - [`lattice`]: Core lattice operations (vectors, matrices)
 //! - [`zk`]: Zero-knowledge proof support (rejection sampling, identification schemes)
-//! - [`poly_commit`]: Polynomial commitment schemes
+//! - [`commit`]: Polynomial commitment schemes (Ajtai/SIS-based)
 
+pub mod commit;
 pub mod lattice;
-pub mod poly_commit;
 pub mod zk;
 
 // Re-export commonly used types
