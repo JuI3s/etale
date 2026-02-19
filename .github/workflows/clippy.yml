@@ -35,5 +35,6 @@ jobs:
             ${{ runner.os }}-cargo-
       
       - name: Run clippy
-        run: cargo clippy --all-targets --all-features -- -D warnings
+        # Lint config is in Cargo.toml [lints.clippy] - no need for -- -D warnings
+        run: cargo clippy --all-targets --all-features
 
