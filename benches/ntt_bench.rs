@@ -8,8 +8,8 @@
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use etale::lattice::decompose::{decompose_poly, recompose_poly};
 use etale::lattice::ntt::{
-    sparse_mul, NttTables, RingElement, RingParams, SparseTernary, COMPRESSED_K16, COMPRESSED_K32,
-    COMPRESSED_K4, COMPRESSED_K8, DILITHIUM_2, FALCON_512, GREYHOUND, HACHI,
+    sparse_mul, NegacyclicNtt, RingElement, RingParams, SparseTernary, COMPRESSED_K16,
+    COMPRESSED_K32, COMPRESSED_K4, COMPRESSED_K8, DILITHIUM_2, FALCON_512, GREYHOUND, HACHI,
 };
 use rand::SeedableRng;
 use rand_chacha::ChaCha8Rng;
@@ -64,7 +64,7 @@ fn bench_ring_mul_ntt(c: &mut Criterion) {
     ];
 
     for &(param, psi) in ntt_params {
-        let tables = NttTables::new(param.d, param.q, psi);
+        let tables = NegacyclicNtt::new(param.d, param.q, psi);
         let a = RingElement::random(&mut rng, param.d, param.q);
         let b = RingElement::random(&mut rng, param.d, param.q);
 
@@ -183,7 +183,7 @@ fn bench_ntt_forward(c: &mut Criterion) {
     let ntt_params: &[(&RingParams, u64)] = &[(&DILITHIUM_2, 1753), (&FALCON_512, 49)];
 
     for &(param, psi) in ntt_params {
-        let tables = NttTables::new(param.d, param.q, psi);
+        let tables = NegacyclicNtt::new(param.d, param.q, psi);
         let a = RingElement::random(&mut rng, param.d, param.q);
 
         group.throughput(Throughput::Elements(param.d as u64));
@@ -215,7 +215,7 @@ fn bench_ntt_inverse(c: &mut Criterion) {
     let ntt_params: &[(&RingParams, u64)] = &[(&DILITHIUM_2, 1753), (&FALCON_512, 49)];
 
     for &(param, psi) in ntt_params {
-        let tables = NttTables::new(param.d, param.q, psi);
+        let tables = NegacyclicNtt::new(param.d, param.q, psi);
         let a = RingElement::random(&mut rng, param.d, param.q);
 
         // Start from NTT form
@@ -324,7 +324,7 @@ fn bench_ring_mul_comparison(c: &mut Criterion) {
     }
 
     // Compare with NTT-friendly primes
-    let kyber_tables = NttTables::new(256, 3329, 17);
+    let kyber_tables = NegacyclicNtt::new(256, 3329, 17);
     let a_kyber = RingElement::random(&mut rng, 256, 3329);
     let b_kyber = RingElement::random(&mut rng, 256, 3329);
 

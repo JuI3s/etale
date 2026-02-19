@@ -1,17 +1,23 @@
-//! NTT-based ring arithmetic for lattice-based polynomial commitments
+//! NTT-based ring arithmetic for power-of-two cyclotomics
 //!
-//! This module provides Number Theoretic Transform (NTT) operations for cyclotomic
-//! rings R_q = Z_q[X]/(X^d + 1), supporting both NTT-friendly primes (Kyber, Dilithium)
-//! and non-NTT-friendly primes via schoolbook multiplication (Hachi approach).
+//! This module provides Number Theoretic Transform (NTT) operations for
+//! negacyclic rings R_q = Z_q[X]/(X^d + 1) where **d must be a power of 2**.
+//!
+//! # Contents
+//!
+//! - [`RingElement`]: Polynomial in R_q with NTT-accelerated or schoolbook multiplication
+//! - [`NegacyclicNtt`]: Precomputed tables for fast negacyclic NTT (power-of-2 only)
+//! - [`SparseTernary`]: Sparse ternary polynomials for challenge multiplication
 //!
 //! # Mathematical Background
 //!
-//! For R_q = Z_q[X]/(X^d + 1) where d is a power of 2:
-//! - X^d + 1 is the 2d-th cyclotomic polynomial
-//! - Its roots are primitive 2d-th roots of unity: ω^{2j+1} for j = 0,...,d-1
+//! For R_q = Z_q[X]/(X^d + 1) where d = 2^n:
+//! - X^d + 1 = Φ_{2d} is the 2d-th cyclotomic polynomial
+//! - Roots are primitive 2d-th roots of unity: ω^{2j+1} for j = 0,...,d-1
+//! - **NTT-friendly:** q ≡ 1 (mod 2d) enables direct negacyclic NTT
+//! - **Non-NTT-friendly:** Falls back to schoolbook multiplication
 //!
-//! **NTT-friendly primes:** q ≡ 1 (mod 2d) allows direct negacyclic NTT
-//! **Non-NTT-friendly primes:** Use schoolbook or CRT-based multiplication
+//! See [`NegacyclicNtt`] for the power-of-2 limitation details.
 //!
 //! # References
 //!
@@ -292,12 +298,32 @@ pub fn sparse_mul(f: &RingElement, g: &SparseTernary) -> RingElement {
 }
 
 // ============================================================================
-// NTT Tables
+// Negacyclic NTT (Power-of-2 Only)
 // ============================================================================
 
-/// Precomputed NTT tables for a specific (d, q, ψ)
+/// Precomputed tables for negacyclic NTT over R_q = Z_q[X]/(X^d + 1).
+///
+/// # Power-of-2 Limitation
+///
+/// **This implementation requires d = 2^n (power-of-two).**
+///
+/// The negacyclic structure X^d + 1 = Φ_{2d} only holds when d is a power of 2.
+/// Specifically, this implementation assumes:
+/// - Binary-split butterfly: d halves evenly at every level
+/// - Bit-reverse permutation: uses exactly log₂(d) bits
+/// - NTT-friendliness: q ≡ 1 (mod 2d)
+/// - Negacyclic ring: X^d ≡ -1, giving the sign flip in butterflies
+///
+/// For general cyclotomic rings R_q = Z_q[X]/Φ_m with m not a power of 2,
+/// use [`super::ring::RingElement`] which supports schoolbook multiplication
+/// for arbitrary cyclotomics (Φ_p, Φ_{2p}, etc.).
+///
+/// # See Also
+///
+/// - [`super::trace`]: Galois tower trace works for arbitrary cyclotomics
+/// - [`super::ring`]: General cyclotomic rings without NTT restriction
 #[derive(Clone)]
-pub struct NttTables {
+pub struct NegacyclicNtt {
     pub d: usize,
     pub q: u64,
     /// ψ = primitive 2d-th root of unity mod q
@@ -315,12 +341,16 @@ pub struct NttTables {
     pub inv_twiddles: Vec<u64>,
 }
 
-impl NttTables {
+impl NegacyclicNtt {
     /// Create NTT tables for given parameters
     ///
     /// Requires: q ≡ 1 (mod 2d), ψ is a primitive 2d-th root of unity
     pub fn new(d: usize, q: u64, psi: u64) -> Self {
-        debug_assert!(d.is_power_of_two());
+        // Hard assert: non-power-of-2 silently corrupts results (see module docs)
+        assert!(
+            d.is_power_of_two(),
+            "NTT requires d to be a power of 2, got d={d}"
+        );
         debug_assert_eq!(pow_mod(psi, 2 * d as u64, q), 1);
         debug_assert_eq!(pow_mod(psi, d as u64, q), q - 1);
 
@@ -413,6 +443,14 @@ impl NttTables {
                 let mut w = 1u64;
 
                 for (u, v) in lo.iter_mut().zip(hi.iter_mut()) {
+                    // Cooley-Tukey butterfly: (u, v, ω^j) → (u + ω^j·v, u - ω^j·v)
+                    //
+                    // Given half-size NTT evaluations u_j = a_even(η^j) and v_j = a_odd(η^j)
+                    // where η = ω² is the primitive (d/2)-th root, the two outputs are
+                    // evaluations of a(X) at the conjugate pair ω^j and ω^{j+d/2}.
+                    //
+                    // The sign flip in the second output comes from ω^{d/2} = -1
+                    // (the unique involution in μ_d, since ω is a primitive d-th root).
                     let t = mul_mod(w, *v, q);
                     (*u, *v) = (add_mod(*u, t, q), sub_mod(*u, t, q));
                     w = mul_mod(w, w_m, q);
@@ -437,6 +475,12 @@ impl NttTables {
                 let mut w = 1u64;
 
                 for (u, v) in lo.iter_mut().zip(hi.iter_mut()) {
+                    // Gentleman-Sande butterfly: (u, v) → (u + v, (u - v)·ω^{-j})
+                    //
+                    // This is the inverse of the Cooley-Tukey butterfly: add/subtract
+                    // first, then multiply — reversed from CT's multiply then add/subtract.
+                    //
+                    // The twiddle factor uses ω^{-1} to invert the forward transform.
                     let sum = add_mod(*u, *v, q);
                     let diff = mul_mod(sub_mod(*u, *v, q), w, q);
                     (*u, *v) = (sum, diff);
@@ -586,7 +630,7 @@ mod tests {
     #[test]
     fn test_ntt_roundtrip_dilithium() {
         let (d, q, psi) = (256, 8_380_417_u64, 1753u64);
-        let tables = NttTables::new(d, q, psi);
+        let tables = NegacyclicNtt::new(d, q, psi);
         let mut rng = test_rng();
 
         let a = RingElement::random(&mut rng, d, q);
@@ -601,7 +645,7 @@ mod tests {
     #[test]
     fn test_ntt_roundtrip_falcon() {
         let (d, q, psi) = (512, 12289u64, 49u64);
-        let tables = NttTables::new(d, q, psi);
+        let tables = NegacyclicNtt::new(d, q, psi);
         let mut rng = test_rng();
 
         let a = RingElement::random(&mut rng, d, q);
@@ -616,7 +660,7 @@ mod tests {
     #[test]
     fn test_ntt_mul_vs_schoolbook() {
         let (d, q, psi) = (256, 8_380_417_u64, 1753u64);
-        let tables = NttTables::new(d, q, psi);
+        let tables = NegacyclicNtt::new(d, q, psi);
         let mut rng = test_rng();
 
         let a = RingElement::random(&mut rng, d, q);
