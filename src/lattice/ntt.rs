@@ -28,7 +28,8 @@ use super::modular::{add_mod, mod_inv, mul_mod, pow_mod, sub_mod};
 // Re-export params for convenience
 pub use super::params::{
     find_primitive_2d_root, RingParams, ALL_PARAMS, COMPRESSED_K16, COMPRESSED_K32, COMPRESSED_K4,
-    COMPRESSED_K8, DILITHIUM_2, FALCON_512, GREYHOUND, HACHI, HACHI_FAMILY, KYBER_512, NTT_FRIENDLY,
+    COMPRESSED_K8, DILITHIUM_2, FALCON_512, GREYHOUND, HACHI, HACHI_FAMILY, KYBER_512,
+    NTT_FRIENDLY,
 };
 
 // ============================================================================
@@ -48,7 +49,11 @@ pub struct RingElement {
 
 impl fmt::Debug for RingElement {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "RingElement {{ d: {}, q: {}, coeffs: [...] }}", self.d, self.q)
+        write!(
+            f,
+            "RingElement {{ d: {}, q: {}, coeffs: [...] }}",
+            self.d, self.q
+        )
     }
 }
 
@@ -68,7 +73,8 @@ impl RingElement {
 
     /// Create from signed coefficients
     pub fn from_signed(coeffs: Vec<i64>, d: usize, q: u64) -> Self {
-        let unsigned = coeffs.into_iter()
+        let unsigned = coeffs
+            .into_iter()
             .map(|c| c.rem_euclid(q as i64) as u64)
             .collect();
         Self::new(unsigned, d, q)
@@ -76,7 +82,11 @@ impl RingElement {
 
     /// Create zero element
     pub fn zero(d: usize, q: u64) -> Self {
-        Self { coeffs: vec![0; d], d, q }
+        Self {
+            coeffs: vec![0; d],
+            d,
+            q,
+        }
     }
 
     /// Create constant element
@@ -88,7 +98,11 @@ impl RingElement {
 
     /// Create random element
     pub fn random<R: rand::Rng>(rng: &mut R, d: usize, q: u64) -> Self {
-        Self { coeffs: (0..d).map(|_| rng.gen_range(0..q)).collect(), d, q }
+        Self {
+            coeffs: (0..d).map(|_| rng.gen_range(0..q)).collect(),
+            d,
+            q,
+        }
     }
 
     /// Create random element with bounded coefficients
@@ -117,10 +131,15 @@ impl RingElement {
     /// Get centered representation (coefficients in [-q/2, q/2))
     pub fn centered(&self) -> Vec<i64> {
         let half_q = self.q as i64 / 2;
-        self.coeffs.iter()
+        self.coeffs
+            .iter()
             .map(|&c| {
                 let c = c as i64;
-                if c > half_q { c - self.q as i64 } else { c }
+                if c > half_q {
+                    c - self.q as i64
+                } else {
+                    c
+                }
             })
             .collect()
     }
@@ -144,36 +163,62 @@ impl RingElement {
     pub fn add(&self, other: &Self) -> Self {
         debug_assert_eq!(self.d, other.d);
         debug_assert_eq!(self.q, other.q);
-        let coeffs = self.coeffs.iter().zip(&other.coeffs)
+        let coeffs = self
+            .coeffs
+            .iter()
+            .zip(&other.coeffs)
             .map(|(&a, &b)| add_mod(a, b, self.q))
             .collect();
-        Self { coeffs, d: self.d, q: self.q }
+        Self {
+            coeffs,
+            d: self.d,
+            q: self.q,
+        }
     }
 
     /// Subtract two ring elements
     pub fn sub(&self, other: &Self) -> Self {
         debug_assert_eq!(self.d, other.d);
         debug_assert_eq!(self.q, other.q);
-        let coeffs = self.coeffs.iter().zip(&other.coeffs)
+        let coeffs = self
+            .coeffs
+            .iter()
+            .zip(&other.coeffs)
             .map(|(&a, &b)| sub_mod(a, b, self.q))
             .collect();
-        Self { coeffs, d: self.d, q: self.q }
+        Self {
+            coeffs,
+            d: self.d,
+            q: self.q,
+        }
     }
 
     /// Negate ring element
     pub fn neg(&self) -> Self {
-        let coeffs = self.coeffs.iter()
+        let coeffs = self
+            .coeffs
+            .iter()
             .map(|&c| if c == 0 { 0 } else { self.q - c })
             .collect();
-        Self { coeffs, d: self.d, q: self.q }
+        Self {
+            coeffs,
+            d: self.d,
+            q: self.q,
+        }
     }
 
     /// Scalar multiplication
     pub fn scalar_mul(&self, scalar: u64) -> Self {
-        let coeffs = self.coeffs.iter()
+        let coeffs = self
+            .coeffs
+            .iter()
             .map(|&c| mul_mod(c, scalar, self.q))
             .collect();
-        Self { coeffs, d: self.d, q: self.q }
+        Self {
+            coeffs,
+            d: self.d,
+            q: self.q,
+        }
     }
 
     /// Schoolbook polynomial multiplication in R_q = Z_q[X]/(X^d + 1)
@@ -189,7 +234,11 @@ impl RingElement {
 
         for ((i, &ai), (j, &bj)) in iproduct!(self_nz, other_nz()) {
             let prod = mul_mod(ai, bj, q);
-            let (idx, sign) = if i + j < d { (i + j, 1) } else { (i + j - d, -1) };
+            let (idx, sign) = if i + j < d {
+                (i + j, 1)
+            } else {
+                (i + j - d, -1)
+            };
 
             result[idx] = if sign > 0 {
                 add_mod(result[idx], prod, q)
@@ -198,7 +247,11 @@ impl RingElement {
             };
         }
 
-        Self { coeffs: result, d, q }
+        Self {
+            coeffs: result,
+            d,
+            q,
+        }
     }
 }
 
@@ -228,7 +281,8 @@ pub fn sparse_mul(f: &RingElement, g: &SparseTernary) -> RingElement {
         }
     }
 
-    let coeffs = result.iter()
+    let coeffs = result
+        .iter()
         .map(|&c| c.rem_euclid(q as i128) as u64)
         .collect();
 
@@ -283,10 +337,25 @@ impl NttTables {
             .collect();
 
         // Precompute twiddle factors (bit-reversed order)
-        let twiddles = (0..d).map(|i| pow_mod(omega, bit_reverse(i, log_d) as u64, q)).collect();
-        let inv_twiddles = (0..d).map(|i| pow_mod(omega_inv, bit_reverse(i, log_d) as u64, q)).collect();
+        let twiddles = (0..d)
+            .map(|i| pow_mod(omega, bit_reverse(i, log_d) as u64, q))
+            .collect();
+        let inv_twiddles = (0..d)
+            .map(|i| pow_mod(omega_inv, bit_reverse(i, log_d) as u64, q))
+            .collect();
 
-        Self { d, q, psi, psi_inv, d_inv, omega, psi_powers, psi_inv_powers, twiddles, inv_twiddles }
+        Self {
+            d,
+            q,
+            psi,
+            psi_inv,
+            d_inv,
+            omega,
+            psi_powers,
+            psi_inv_powers,
+            twiddles,
+            inv_twiddles,
+        }
     }
 
     /// Forward negacyclic NTT
@@ -379,7 +448,10 @@ impl NttTables {
     pub fn pointwise_mul(&self, a: &[u64], b: &[u64]) -> Vec<u64> {
         debug_assert_eq!(a.len(), self.d);
         debug_assert_eq!(b.len(), self.d);
-        a.iter().zip(b).map(|(&x, &y)| mul_mod(x, y, self.q)).collect()
+        a.iter()
+            .zip(b)
+            .map(|(&x, &y)| mul_mod(x, y, self.q))
+            .collect()
     }
 
     /// Pointwise multiply and accumulate: result += a * b
@@ -405,7 +477,11 @@ impl NttTables {
         let mut c_ntt = self.pointwise_mul(&a_ntt, &b_ntt);
         self.inverse(&mut c_ntt);
 
-        RingElement { coeffs: c_ntt, d: self.d, q: self.q }
+        RingElement {
+            coeffs: c_ntt,
+            d: self.d,
+            q: self.q,
+        }
     }
 }
 
@@ -435,7 +511,11 @@ mod tests {
     ];
 
     fn assert_primitive_root(q: u64, d: usize, psi: u64, name: &str) {
-        assert_eq!(pow_mod(psi, 2 * d as u64, q), 1, "{name}: ψ^(2d) should be 1");
+        assert_eq!(
+            pow_mod(psi, 2 * d as u64, q),
+            1,
+            "{name}: ψ^(2d) should be 1"
+        );
         assert_eq!(pow_mod(psi, d as u64, q), q - 1, "{name}: ψ^d should be -1");
         assert_eq!(q % (2 * d as u64), 1, "{name}: q should be ≡ 1 (mod 2d)");
     }

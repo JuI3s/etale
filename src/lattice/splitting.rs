@@ -42,14 +42,26 @@ impl SplittingParams {
         debug_assert!(n.is_power_of_two(), "n must be a power of two");
         debug_assert!(n.is_multiple_of(num_splits), "num_splits must divide n");
         debug_assert!(omega <= n, "omega cannot exceed n");
-        Self { n, num_splits, tau, omega, modulus }
+        Self {
+            n,
+            num_splits,
+            tau,
+            omega,
+            modulus,
+        }
     }
 
     /// Create parameters with num_splits computed automatically
     pub fn with_computed_splits(n: usize, tau: u64, omega: usize, modulus: u64) -> Self {
         debug_assert!(n.is_power_of_two());
         debug_assert!(omega <= n);
-        Self { n, num_splits: Self::compute_num_splits(n, modulus), tau, omega, modulus }
+        Self {
+            n,
+            num_splits: Self::compute_num_splits(n, modulus),
+            tau,
+            omega,
+            modulus,
+        }
     }
 
     /// Compute the number of irreducible factors of X^n + 1 mod q
@@ -61,7 +73,11 @@ impl SplittingParams {
         }
 
         let j = (modulus - 1).trailing_zeros() as usize;
-        if j < 2 { 1 } else { n.min(1 << (j - 1)) }
+        if j < 2 {
+            1
+        } else {
+            n.min(1 << (j - 1))
+        }
     }
 
     /// Check if num_splits matches the computed value
@@ -93,7 +109,11 @@ impl SplittingParams {
     /// Security level (floor of log2 of challenge set size)
     pub fn security_bits(&self) -> u64 {
         let size = self.challenge_set_size();
-        if size == 0 { 0 } else { size.ilog2() as u64 }
+        if size == 0 {
+            0
+        } else {
+            size.ilog2() as u64
+        }
     }
 }
 
@@ -116,12 +136,18 @@ impl Challenge {
         let mut coeffs = sparse_coeffs;
         coeffs.sort_by_key(|(idx, _)| *idx);
         coeffs.retain(|(_, c)| *c != 0);
-        Self { sparse_coeffs: coeffs, n }
+        Self {
+            sparse_coeffs: coeffs,
+            n,
+        }
     }
 
     /// Create the zero challenge
     pub fn zero(n: usize) -> Self {
-        Self { sparse_coeffs: vec![], n }
+        Self {
+            sparse_coeffs: vec![],
+            n,
+        }
     }
 
     /// Convert to dense coefficient representation
@@ -140,7 +166,11 @@ impl Challenge {
 
     /// Infinity norm
     pub fn ell_inf_norm(&self) -> i64 {
-        self.sparse_coeffs.iter().map(|(_, c)| c.abs()).max().unwrap_or(0)
+        self.sparse_coeffs
+            .iter()
+            .map(|(_, c)| c.abs())
+            .max()
+            .unwrap_or(0)
     }
 }
 
@@ -153,8 +183,13 @@ impl Challenge {
     pub fn sub(&self, other: &Challenge) -> Challenge {
         debug_assert_eq!(self.n, other.n);
 
-        let result = self.sparse_coeffs.iter().copied()
-            .merge_join_by(other.sparse_coeffs.iter().copied(), |(i, _), (j, _)| i.cmp(j))
+        let result = self
+            .sparse_coeffs
+            .iter()
+            .copied()
+            .merge_join_by(other.sparse_coeffs.iter().copied(), |(i, _), (j, _)| {
+                i.cmp(j)
+            })
             .filter_map(|eob| match eob {
                 EitherOrBoth::Left((idx, c)) => Some((idx, c)),
                 EitherOrBoth::Right((idx, c)) => Some((idx, -c)),
@@ -172,8 +207,13 @@ impl Challenge {
     pub fn add(&self, other: &Challenge) -> Challenge {
         debug_assert_eq!(self.n, other.n);
 
-        let result = self.sparse_coeffs.iter().copied()
-            .merge_join_by(other.sparse_coeffs.iter().copied(), |(i, _), (j, _)| i.cmp(j))
+        let result = self
+            .sparse_coeffs
+            .iter()
+            .copied()
+            .merge_join_by(other.sparse_coeffs.iter().copied(), |(i, _), (j, _)| {
+                i.cmp(j)
+            })
             .filter_map(|eob| match eob {
                 EitherOrBoth::Left(pair) | EitherOrBoth::Right(pair) => Some(pair),
                 EitherOrBoth::Both((idx, c1), (_, c2)) => {
@@ -188,7 +228,11 @@ impl Challenge {
 
     /// Negate the challenge
     pub fn neg(&self) -> Challenge {
-        let coeffs = self.sparse_coeffs.iter().map(|&(idx, c)| (idx, -c)).collect();
+        let coeffs = self
+            .sparse_coeffs
+            .iter()
+            .map(|&(idx, c)| (idx, -c))
+            .collect();
         Challenge::new(coeffs, self.n)
     }
 }
@@ -200,7 +244,8 @@ impl Challenge {
 /// Sample a random challenge from the challenge set
 pub fn sample_challenge<R: Rng>(rng: &mut R, n: usize, tau: u64, omega: usize) -> Challenge {
     let positions = sample_distinct_positions(rng, n, omega);
-    let sparse_coeffs = positions.into_iter()
+    let sparse_coeffs = positions
+        .into_iter()
         .map(|pos| (pos, sample_nonzero_bounded(rng, tau)))
         .collect();
     Challenge::new(sparse_coeffs, n)
@@ -233,7 +278,8 @@ pub fn challenge_from_seed(seed: &[u8], n: usize, omega: usize, tau: u64) -> Cha
             byte_idx = 0;
         }
 
-        let pos = u16::from_le_bytes([current_hash[byte_idx], current_hash[byte_idx + 1]]) as usize % n;
+        let pos =
+            u16::from_le_bytes([current_hash[byte_idx], current_hash[byte_idx + 1]]) as usize % n;
         byte_idx += 2;
 
         if used_positions.insert(pos) {
@@ -242,7 +288,11 @@ pub fn challenge_from_seed(seed: &[u8], n: usize, omega: usize, tau: u64) -> Cha
             byte_idx += 1;
 
             let sign = if coeff_byte & 1 == 0 { 1i64 } else { -1 };
-            let mag = if tau == 1 { 1 } else { ((coeff_byte >> 1) as u64 % tau) as i64 + 1 };
+            let mag = if tau == 1 {
+                1
+            } else {
+                ((coeff_byte >> 1) as u64 % tau) as i64 + 1
+            };
             coeffs.push(sign * mag);
         } else {
             byte_idx += 1;
@@ -264,7 +314,11 @@ pub fn is_definitely_difference_invertible(diff: &Challenge, params: &SplittingP
         return false;
     }
 
-    let (q, k, tau) = (params.modulus as i64, params.num_splits as i64, params.tau as i64);
+    let (q, k, tau) = (
+        params.modulus as i64,
+        params.num_splits as i64,
+        params.tau as i64,
+    );
     let max_coeff = diff.ell_inf_norm();
 
     if max_coeff > 2 * tau {
@@ -299,7 +353,12 @@ impl ChallengeSet {
         let mut seen = HashSet::with_capacity(max_challenges);
 
         let challenges: Vec<Challenge> = std::iter::from_fn(|| {
-            Some(sample_challenge(&mut rng, params.n, params.tau, params.omega))
+            Some(sample_challenge(
+                &mut rng,
+                params.n,
+                params.tau,
+                params.omega,
+            ))
         })
         .filter(|c| seen.insert(c.clone()))
         .take(max_challenges)
@@ -357,16 +416,26 @@ fn sample_distinct_positions<R: Rng>(rng: &mut R, n: usize, k: usize) -> Vec<usi
 /// Sample a non-zero integer from {-bound, ..., -1, 1, ..., bound}
 fn sample_nonzero_bounded<R: Rng>(rng: &mut R, bound: u64) -> i64 {
     let r = rng.gen_range(0..2 * bound);
-    if r < bound { -((r + 1) as i64) } else { (r - bound + 1) as i64 }
+    if r < bound {
+        -((r + 1) as i64)
+    } else {
+        (r - bound + 1) as i64
+    }
 }
 
 /// Compute binomial coefficient C(n, k)
 fn binomial_coefficient(n: usize, k: usize) -> u128 {
-    if k > n { return 0; }
-    if k == 0 || k == n { return 1; }
+    if k > n {
+        return 0;
+    }
+    if k == 0 || k == n {
+        return 1;
+    }
 
     let k = k.min(n - k);
-    (0..k).fold(1u128, |acc, i| acc.saturating_mul((n - i) as u128) / (i + 1) as u128)
+    (0..k).fold(1u128, |acc, i| {
+        acc.saturating_mul((n - i) as u128) / (i + 1) as u128
+    })
 }
 
 // ============================================================================
@@ -374,15 +443,33 @@ fn binomial_coefficient(n: usize, k: usize) -> u128 {
 // ============================================================================
 
 pub fn dilithium_challenge_params() -> SplittingParams {
-    SplittingParams { n: 256, num_splits: 256, tau: 1, omega: 60, modulus: 8380417 }
+    SplittingParams {
+        n: 256,
+        num_splits: 256,
+        tau: 1,
+        omega: 60,
+        modulus: 8380417,
+    }
 }
 
 pub fn hachi_challenge_params() -> SplittingParams {
-    SplittingParams { n: 1024, num_splits: 256, tau: 1, omega: 128, modulus: 65537 }
+    SplittingParams {
+        n: 1024,
+        num_splits: 256,
+        tau: 1,
+        omega: 128,
+        modulus: 65537,
+    }
 }
 
 pub fn test_challenge_params() -> SplittingParams {
-    SplittingParams { n: 64, num_splits: 16, tau: 1, omega: 16, modulus: 65537 }
+    SplittingParams {
+        n: 64,
+        num_splits: 16,
+        tau: 1,
+        omega: 16,
+        modulus: 65537,
+    }
 }
 
 // ============================================================================
@@ -451,24 +538,54 @@ mod tests {
 
     #[test]
     fn test_invertibility() {
-        let params = SplittingParams { n: 64, num_splits: 64, tau: 1, omega: 8, modulus: 65537 };
+        let params = SplittingParams {
+            n: 64,
+            num_splits: 64,
+            tau: 1,
+            omega: 8,
+            modulus: 65537,
+        };
 
-        assert!(!is_definitely_difference_invertible(&Challenge::zero(64), &params));
-        assert!(is_definitely_difference_invertible(&Challenge::new(vec![(0, 1)], 64), &params));
-        assert!(is_definitely_difference_invertible(&Challenge::new(vec![(0, -1)], 64), &params));
-        assert!(is_definitely_difference_invertible(&Challenge::new(vec![(0, 1), (5, -1)], 64), &params));
-        assert!(is_definitely_difference_invertible(&Challenge::new(vec![(3, 1), (7, -1)], 64), &params));
+        assert!(!is_definitely_difference_invertible(
+            &Challenge::zero(64),
+            &params
+        ));
+        assert!(is_definitely_difference_invertible(
+            &Challenge::new(vec![(0, 1)], 64),
+            &params
+        ));
+        assert!(is_definitely_difference_invertible(
+            &Challenge::new(vec![(0, -1)], 64),
+            &params
+        ));
+        assert!(is_definitely_difference_invertible(
+            &Challenge::new(vec![(0, 1), (5, -1)], 64),
+            &params
+        ));
+        assert!(is_definitely_difference_invertible(
+            &Challenge::new(vec![(3, 1), (7, -1)], 64),
+            &params
+        ));
     }
 
     #[test]
     fn test_challenge_set_size() {
-        let params = SplittingParams { n: 64, num_splits: 64, tau: 1, omega: 32, modulus: 8380417 };
+        let params = SplittingParams {
+            n: 64,
+            num_splits: 64,
+            tau: 1,
+            omega: 32,
+            modulus: 8380417,
+        };
         let size = params.challenge_set_size();
         assert!(size > 0);
         assert!(params.security_bits() > 60);
 
         let dilithium = dilithium_challenge_params();
-        assert!(dilithium.challenge_set_size() == u128::MAX || dilithium.challenge_set_size() > 1u128 << 100);
+        assert!(
+            dilithium.challenge_set_size() == u128::MAX
+                || dilithium.challenge_set_size() > 1u128 << 100
+        );
     }
 
     #[test]
@@ -541,16 +658,34 @@ mod tests {
 
     #[test]
     fn test_validate_num_splits() {
-        let valid = SplittingParams { n: 256, num_splits: 256, tau: 1, omega: 60, modulus: 8380417 };
+        let valid = SplittingParams {
+            n: 256,
+            num_splits: 256,
+            tau: 1,
+            omega: 60,
+            modulus: 8380417,
+        };
         assert!(valid.is_valid_num_splits());
 
-        let invalid = SplittingParams { n: 256, num_splits: 128, tau: 1, omega: 60, modulus: 8380417 };
+        let invalid = SplittingParams {
+            n: 256,
+            num_splits: 128,
+            tau: 1,
+            omega: 60,
+            modulus: 8380417,
+        };
         assert!(!invalid.is_valid_num_splits());
     }
 
     #[test]
     fn test_challenge_set_build() {
-        let params = SplittingParams { n: 64, num_splits: 64, tau: 1, omega: 8, modulus: 65537 };
+        let params = SplittingParams {
+            n: 64,
+            num_splits: 64,
+            tau: 1,
+            omega: 8,
+            modulus: 65537,
+        };
         let set = ChallengeSet::build(params, 10);
 
         assert_eq!(set.size(), 10);

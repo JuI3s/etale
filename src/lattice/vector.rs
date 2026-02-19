@@ -17,16 +17,19 @@ pub struct Vector {
 impl Vector {
     /// Create new vector, reducing coefficients mod q
     pub fn new(coeffs: Vec<i64>, modulus: i64) -> Self {
-        let reduced = coeffs
-            .into_iter()
-            .map(|c| c.rem_euclid(modulus))
-            .collect();
-        Self { coeffs: reduced, modulus }
+        let reduced = coeffs.into_iter().map(|c| c.rem_euclid(modulus)).collect();
+        Self {
+            coeffs: reduced,
+            modulus,
+        }
     }
 
     /// Create zero vector of length n
     pub fn zero(n: usize, modulus: i64) -> Self {
-        Self { coeffs: vec![0; n], modulus }
+        Self {
+            coeffs: vec![0; n],
+            modulus,
+        }
     }
 
     /// Create random vector with coefficients in [-bound, bound]
@@ -57,7 +60,11 @@ impl Vector {
     /// Center coefficient to [-q/2, q/2]
     #[inline]
     fn center(&self, c: i64) -> i64 {
-        if c > self.modulus / 2 { c - self.modulus } else { c }
+        if c > self.modulus / 2 {
+            c - self.modulus
+        } else {
+            c
+        }
     }
 
     /// Centered representative (coefficients in [-q/2, q/2])
@@ -85,12 +92,17 @@ impl Vector {
         debug_assert_eq!(self.coeffs.len(), other.coeffs.len());
         debug_assert_eq!(self.modulus, other.modulus);
 
-        let coeffs = self.coeffs.iter()
+        let coeffs = self
+            .coeffs
+            .iter()
             .zip(&other.coeffs)
             .map(|(&a, &b)| (a + b).rem_euclid(self.modulus))
             .collect();
 
-        Self { coeffs, modulus: self.modulus }
+        Self {
+            coeffs,
+            modulus: self.modulus,
+        }
     }
 
     /// Scalar multiplication
@@ -105,7 +117,8 @@ impl Vector {
     pub fn inner_product(&self, other: &Self) -> i64 {
         debug_assert_eq!(self.coeffs.len(), other.coeffs.len());
 
-        self.coeffs.iter()
+        self.coeffs
+            .iter()
             .zip(&other.coeffs)
             .map(|(&a, &b)| a * b)
             .sum::<i64>()

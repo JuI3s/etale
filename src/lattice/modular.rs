@@ -290,4 +290,3 @@ mod tests {
         assert_eq!(reduce_signed(34, q), 0);
     }
 }
-

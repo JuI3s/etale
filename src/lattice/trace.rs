@@ -33,7 +33,10 @@ impl<F: Field> CyclotomicRingElement<F> {
 
     /// Create zero element
     pub fn zero(dim: usize) -> Self {
-        Self { coeffs: vec![F::zero(); dim], dim }
+        Self {
+            coeffs: vec![F::zero(); dim],
+            dim,
+        }
     }
 
     /// Create random element for testing
@@ -71,7 +74,9 @@ impl<F: Field> CyclotomicRingElement<F> {
     /// Add two ring elements
     pub fn add(&self, other: &Self) -> Self {
         debug_assert_eq!(self.dim, other.dim);
-        let coeffs = self.coeffs.iter()
+        let coeffs = self
+            .coeffs
+            .iter()
             .zip(&other.coeffs)
             .map(|(a, b)| *a + *b)
             .collect();
@@ -153,11 +158,16 @@ impl GaloisSubgroup {
 /// Naive trace: Tr_H(x) = Σ_{σ∈H} σ(x)
 ///
 /// Time: O(|H| * d) = O(d²/k)
-pub fn trace_naive<F: Field>(x: &CyclotomicRingElement<F>, h: &GaloisSubgroup) -> CyclotomicRingElement<F> {
+pub fn trace_naive<F: Field>(
+    x: &CyclotomicRingElement<F>,
+    h: &GaloisSubgroup,
+) -> CyclotomicRingElement<F> {
     h.elements()
         .into_iter()
         .map(|sigma| x.pow_automorphism(sigma))
-        .fold(CyclotomicRingElement::zero(x.dim), |acc, elem| acc.add(&elem))
+        .fold(CyclotomicRingElement::zero(x.dim), |acc, elem| {
+            acc.add(&elem)
+        })
 }
 
 /// Tower-optimized trace: Tr_H(x) = (1 + σ_{g_1})(1 + σ_{g_2})...(1 + σ_{g_t})(x)
@@ -165,7 +175,10 @@ pub fn trace_naive<F: Field>(x: &CyclotomicRingElement<F>, h: &GaloisSubgroup) -
 /// Time: O(log|H| * d) = O(d * log(d/k))
 ///
 /// This is the 32× speedup for Hachi parameters (d=1024, k=4)
-pub fn trace_tower<F: Field>(x: &CyclotomicRingElement<F>, h: &GaloisSubgroup) -> CyclotomicRingElement<F> {
+pub fn trace_tower<F: Field>(
+    x: &CyclotomicRingElement<F>,
+    h: &GaloisSubgroup,
+) -> CyclotomicRingElement<F> {
     h.tower_generators()
         .into_iter()
         .fold(x.clone(), |result, gen| {
@@ -184,12 +197,18 @@ pub struct OpCount {
 }
 
 pub fn count_naive_ops(h: &GaloisSubgroup) -> OpCount {
-    OpCount { automorphisms: h.order, additions: h.order - 1 }
+    OpCount {
+        automorphisms: h.order,
+        additions: h.order - 1,
+    }
 }
 
 pub fn count_tower_ops(h: &GaloisSubgroup) -> OpCount {
     let n = h.tower_generators().len();
-    OpCount { automorphisms: n, additions: n }
+    OpCount {
+        automorphisms: n,
+        additions: n,
+    }
 }
 
 /// Benchmark helper
@@ -224,8 +243,14 @@ pub fn benchmark_trace<F: Field + PrimeField>(d: usize, k: usize, trials: usize)
     let tower_ops = count_tower_ops(&h);
 
     println!("d={d}, k={k}, |H|={}", h.order);
-    println!("  Naive:  {} automorphisms, {naive_time:.1}µs", naive_ops.automorphisms);
-    println!("  Tower:  {} automorphisms, {tower_time:.1}µs", tower_ops.automorphisms);
+    println!(
+        "  Naive:  {} automorphisms, {naive_time:.1}µs",
+        naive_ops.automorphisms
+    );
+    println!(
+        "  Tower:  {} automorphisms, {tower_time:.1}µs",
+        tower_ops.automorphisms
+    );
     println!(
         "  Speedup: {:.1}× (theoretical: {}×)",
         naive_time / tower_time,
@@ -260,7 +285,12 @@ mod tests {
     #[test]
     fn test_automorphism_identity() {
         let x = CyclotomicRingElement::<TestFq>::new(
-            vec![TestFq::from(1u64), TestFq::from(2u64), TestFq::from(3u64), TestFq::from(4u64)],
+            vec![
+                TestFq::from(1u64),
+                TestFq::from(2u64),
+                TestFq::from(3u64),
+                TestFq::from(4u64),
+            ],
             4,
         );
         assert_eq!(x, x.pow_automorphism(1));
@@ -271,7 +301,12 @@ mod tests {
         let d = 4;
         // X ↦ X^{-1 mod 8} = X^7 ≡ -X^3 mod (X^4 + 1)
         let x = CyclotomicRingElement::<TestFq>::new(
-            vec![TestFq::from(0u64), TestFq::from(1u64), TestFq::from(0u64), TestFq::from(0u64)],
+            vec![
+                TestFq::from(0u64),
+                TestFq::from(1u64),
+                TestFq::from(0u64),
+                TestFq::from(0u64),
+            ],
             d,
         );
         let sigma = x.pow_automorphism(2 * d - 1);
@@ -320,6 +355,6 @@ mod tests {
         let gens = h.tower_generators();
         assert_eq!(gens.len(), 8);
         assert_eq!(gens[0], 2 * d - 1); // σ_{-1}
-        assert_eq!(gens[1], 17);        // σ_{17}
+        assert_eq!(gens[1], 17); // σ_{17}
     }
 }

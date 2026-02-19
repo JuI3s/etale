@@ -50,7 +50,11 @@ pub fn decompose_poly(f: &RingElement, b: u64, delta: usize) -> Vec<RingElement>
     let (d, q) = (f.d, f.q);
 
     // Decompose each coefficient, then transpose to get δ polynomials
-    let all_digits: Vec<_> = f.coeffs.iter().map(|&c| decompose_scalar(c, b, delta)).collect();
+    let all_digits: Vec<_> = f
+        .coeffs
+        .iter()
+        .map(|&c| decompose_scalar(c, b, delta))
+        .collect();
 
     (0..delta)
         .map(|j| {

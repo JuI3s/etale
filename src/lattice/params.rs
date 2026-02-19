@@ -54,7 +54,9 @@ impl RingParams {
 
     /// Find a primitive 2d-th root of unity mod q, if one exists.
     pub fn find_primitive_root(&self) -> Option<u64> {
-        self.supports_direct_ntt().then(|| find_primitive_2d_root(self.q, self.d)).flatten()
+        self.supports_direct_ntt()
+            .then(|| find_primitive_2d_root(self.q, self.d))
+            .flatten()
     }
 
     /// Verify that ψ is a valid primitive 2d-th root of unity.
@@ -131,22 +133,46 @@ pub const HACHI: RingParams = RingParams {
 
 /// Compression k=4: d=256, beta_inf = 60
 pub const COMPRESSED_K4: RingParams = RingParams {
-    d: 256, q: 4294967197, kappa: 1, b: 16, delta: 8, beta_inf: 60, name: "Compressed_k4",
+    d: 256,
+    q: 4294967197,
+    kappa: 1,
+    b: 16,
+    delta: 8,
+    beta_inf: 60,
+    name: "Compressed_k4",
 };
 
 /// Compression k=8: d=128, beta_inf = 120
 pub const COMPRESSED_K8: RingParams = RingParams {
-    d: 128, q: 4294967197, kappa: 1, b: 16, delta: 8, beta_inf: 120, name: "Compressed_k8",
+    d: 128,
+    q: 4294967197,
+    kappa: 1,
+    b: 16,
+    delta: 8,
+    beta_inf: 120,
+    name: "Compressed_k8",
 };
 
 /// Compression k=16: d=64, beta_inf = 240 (THE SWEET SPOT)
 pub const COMPRESSED_K16: RingParams = RingParams {
-    d: 64, q: 4294967197, kappa: 1, b: 16, delta: 8, beta_inf: 240, name: "Compressed_k16",
+    d: 64,
+    q: 4294967197,
+    kappa: 1,
+    b: 16,
+    delta: 8,
+    beta_inf: 240,
+    name: "Compressed_k16",
 };
 
 /// Compression k=32: d=32, beta_inf = 480 (aggressive)
 pub const COMPRESSED_K32: RingParams = RingParams {
-    d: 32, q: 4294967197, kappa: 1, b: 16, delta: 8, beta_inf: 480, name: "Compressed_k32",
+    d: 32,
+    q: 4294967197,
+    kappa: 1,
+    b: 16,
+    delta: 8,
+    beta_inf: 480,
+    name: "Compressed_k32",
 };
 
 // ============================================================================
@@ -170,19 +196,37 @@ pub const GREYHOUND: RingParams = RingParams {
 
 /// NIST ML-KEM-512 (Kyber) parameters [FIPS 203]
 pub const KYBER_512: RingParams = RingParams {
-    d: 256, q: 3329, kappa: 2, b: 2, delta: 12, beta_inf: 1, name: "Kyber_512",
+    d: 256,
+    q: 3329,
+    kappa: 2,
+    b: 2,
+    delta: 12,
+    beta_inf: 1,
+    name: "Kyber_512",
 };
 
 /// NIST ML-DSA-44 (Dilithium) parameters [FIPS 204]
 /// Primitive root: ψ = 1753
 pub const DILITHIUM_2: RingParams = RingParams {
-    d: 256, q: 8380417, kappa: 4, b: 2, delta: 23, beta_inf: 1, name: "Dilithium_2",
+    d: 256,
+    q: 8380417,
+    kappa: 4,
+    b: 2,
+    delta: 23,
+    beta_inf: 1,
+    name: "Dilithium_2",
 };
 
 /// NIST Falcon-512 parameters [FIPS 206]
 /// Primitive root: ψ = 49
 pub const FALCON_512: RingParams = RingParams {
-    d: 512, q: 12289, kappa: 1, b: 2, delta: 14, beta_inf: 1, name: "Falcon_512",
+    d: 512,
+    q: 12289,
+    kappa: 1,
+    b: 2,
+    delta: 14,
+    beta_inf: 1,
+    name: "Falcon_512",
 };
 
 // ============================================================================
@@ -191,13 +235,24 @@ pub const FALCON_512: RingParams = RingParams {
 
 /// All parameter sets for benchmarking
 pub const ALL_PARAMS: &[&RingParams] = &[
-    &HACHI, &COMPRESSED_K4, &COMPRESSED_K8, &COMPRESSED_K16, &COMPRESSED_K32,
-    &GREYHOUND, &KYBER_512, &DILITHIUM_2, &FALCON_512,
+    &HACHI,
+    &COMPRESSED_K4,
+    &COMPRESSED_K8,
+    &COMPRESSED_K16,
+    &COMPRESSED_K32,
+    &GREYHOUND,
+    &KYBER_512,
+    &DILITHIUM_2,
+    &FALCON_512,
 ];
 
 /// Hachi-based parameter sets (same q, varying d)
 pub const HACHI_FAMILY: &[&RingParams] = &[
-    &HACHI, &COMPRESSED_K4, &COMPRESSED_K8, &COMPRESSED_K16, &COMPRESSED_K32,
+    &HACHI,
+    &COMPRESSED_K4,
+    &COMPRESSED_K8,
+    &COMPRESSED_K16,
+    &COMPRESSED_K32,
 ];
 
 /// NTT-friendly parameter sets (q ≡ 1 mod 2d)

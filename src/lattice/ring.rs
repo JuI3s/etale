@@ -86,7 +86,11 @@ pub struct RingElement {
 
 impl fmt::Debug for RingElement {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "RingElement {{ {:?}, q: {}, coeffs: [...] }}", self.cyclotomic, self.q)
+        write!(
+            f,
+            "RingElement {{ {:?}, q: {}, coeffs: [...] }}",
+            self.cyclotomic, self.q
+        )
     }
 }
 
@@ -101,7 +105,11 @@ impl RingElement {
         let mut c = coeffs;
         c.resize(d, 0);
         c.iter_mut().for_each(|coeff| *coeff %= q);
-        Self { coeffs: c, cyclotomic, q }
+        Self {
+            coeffs: c,
+            cyclotomic,
+            q,
+        }
     }
 
     /// Create for power-of-two cyclotomic (convenience)
@@ -111,7 +119,8 @@ impl RingElement {
 
     /// Create from signed coefficients
     pub fn from_signed(coeffs: Vec<i64>, cyclotomic: CyclotomicType, q: u64) -> Self {
-        let unsigned = coeffs.into_iter()
+        let unsigned = coeffs
+            .into_iter()
             .map(|c| c.rem_euclid(q as i64) as u64)
             .collect();
         Self::new(unsigned, cyclotomic, q)
@@ -119,7 +128,11 @@ impl RingElement {
 
     /// Create zero element
     pub fn zero(cyclotomic: CyclotomicType, q: u64) -> Self {
-        Self { coeffs: vec![0; cyclotomic.degree()], cyclotomic, q }
+        Self {
+            coeffs: vec![0; cyclotomic.degree()],
+            cyclotomic,
+            q,
+        }
     }
 
     /// Create zero for power-of-two cyclotomic
@@ -131,7 +144,11 @@ impl RingElement {
     pub fn constant(c: u64, cyclotomic: CyclotomicType, q: u64) -> Self {
         let mut coeffs = vec![0; cyclotomic.degree()];
         coeffs[0] = c % q;
-        Self { coeffs, cyclotomic, q }
+        Self {
+            coeffs,
+            cyclotomic,
+            q,
+        }
     }
 
     /// Backward compatibility alias
@@ -140,8 +157,13 @@ impl RingElement {
         Self::new_pow2(coeffs, d, q)
     }
 
-    pub fn degree(&self) -> usize { self.cyclotomic.degree() }
-    #[inline] pub fn d(&self) -> usize { self.degree() }
+    pub fn degree(&self) -> usize {
+        self.cyclotomic.degree()
+    }
+    #[inline]
+    pub fn d(&self) -> usize {
+        self.degree()
+    }
 }
 
 // ============================================================================
@@ -151,8 +173,14 @@ impl RingElement {
 impl RingElement {
     /// Create random element
     pub fn random<R: rand::Rng>(rng: &mut R, cyclotomic: CyclotomicType, q: u64) -> Self {
-        let coeffs = (0..cyclotomic.degree()).map(|_| rng.gen_range(0..q)).collect();
-        Self { coeffs, cyclotomic, q }
+        let coeffs = (0..cyclotomic.degree())
+            .map(|_| rng.gen_range(0..q))
+            .collect();
+        Self {
+            coeffs,
+            cyclotomic,
+            q,
+        }
     }
 
     /// Create random for power-of-two (convenience)
@@ -161,13 +189,25 @@ impl RingElement {
     }
 
     /// Create random element with bounded coefficients
-    pub fn random_bounded<R: rand::Rng>(rng: &mut R, cyclotomic: CyclotomicType, q: u64, bound: u64) -> Self {
-        let coeffs = (0..cyclotomic.degree()).map(|_| rng.gen_range(0..bound)).collect();
+    pub fn random_bounded<R: rand::Rng>(
+        rng: &mut R,
+        cyclotomic: CyclotomicType,
+        q: u64,
+        bound: u64,
+    ) -> Self {
+        let coeffs = (0..cyclotomic.degree())
+            .map(|_| rng.gen_range(0..bound))
+            .collect();
         Self::new(coeffs, cyclotomic, q)
     }
 
     /// Create random ternary element with `num_nonzero` coefficients in {-1, +1}
-    pub fn random_ternary<R: rand::Rng>(rng: &mut R, cyclotomic: CyclotomicType, q: u64, num_nonzero: usize) -> Self {
+    pub fn random_ternary<R: rand::Rng>(
+        rng: &mut R,
+        cyclotomic: CyclotomicType,
+        q: u64,
+        num_nonzero: usize,
+    ) -> Self {
         use rand::seq::SliceRandom;
         let d = cyclotomic.degree();
         let mut coeffs = vec![0i64; d];
@@ -188,10 +228,15 @@ impl RingElement {
     /// Get centered representation (coefficients in [-q/2, q/2))
     pub fn centered(&self) -> Vec<i64> {
         let half_q = self.q as i64 / 2;
-        self.coeffs.iter()
+        self.coeffs
+            .iter()
             .map(|&c| {
                 let c = c as i64;
-                if c > half_q { c - self.q as i64 } else { c }
+                if c > half_q {
+                    c - self.q as i64
+                } else {
+                    c
+                }
             })
             .collect()
     }
@@ -215,36 +260,62 @@ impl RingElement {
     pub fn add(&self, other: &Self) -> Self {
         debug_assert_eq!(self.cyclotomic, other.cyclotomic);
         debug_assert_eq!(self.q, other.q);
-        let coeffs = self.coeffs.iter().zip(&other.coeffs)
+        let coeffs = self
+            .coeffs
+            .iter()
+            .zip(&other.coeffs)
             .map(|(&a, &b)| add_mod(a, b, self.q))
             .collect();
-        Self { coeffs, cyclotomic: self.cyclotomic, q: self.q }
+        Self {
+            coeffs,
+            cyclotomic: self.cyclotomic,
+            q: self.q,
+        }
     }
 
     /// Subtract two ring elements
     pub fn sub(&self, other: &Self) -> Self {
         debug_assert_eq!(self.cyclotomic, other.cyclotomic);
         debug_assert_eq!(self.q, other.q);
-        let coeffs = self.coeffs.iter().zip(&other.coeffs)
+        let coeffs = self
+            .coeffs
+            .iter()
+            .zip(&other.coeffs)
             .map(|(&a, &b)| sub_mod(a, b, self.q))
             .collect();
-        Self { coeffs, cyclotomic: self.cyclotomic, q: self.q }
+        Self {
+            coeffs,
+            cyclotomic: self.cyclotomic,
+            q: self.q,
+        }
     }
 
     /// Negate ring element
     pub fn neg(&self) -> Self {
-        let coeffs = self.coeffs.iter()
+        let coeffs = self
+            .coeffs
+            .iter()
             .map(|&c| if c == 0 { 0 } else { self.q - c })
             .collect();
-        Self { coeffs, cyclotomic: self.cyclotomic, q: self.q }
+        Self {
+            coeffs,
+            cyclotomic: self.cyclotomic,
+            q: self.q,
+        }
     }
 
     /// Scalar multiplication
     pub fn scalar_mul(&self, scalar: u64) -> Self {
-        let coeffs = self.coeffs.iter()
+        let coeffs = self
+            .coeffs
+            .iter()
             .map(|&c| mul_mod(c, scalar, self.q))
             .collect();
-        Self { coeffs, cyclotomic: self.cyclotomic, q: self.q }
+        Self {
+            coeffs,
+            cyclotomic: self.cyclotomic,
+            q: self.q,
+        }
     }
 }
 
@@ -276,7 +347,11 @@ impl RingElement {
 
         for ((i, &ai), (j, &bj)) in iproduct!(self_nz, other_nz()) {
             let prod = mul_mod(ai, bj, q);
-            let (idx, sign) = if i + j < d { (i + j, 1) } else { (i + j - d, -1) };
+            let (idx, sign) = if i + j < d {
+                (i + j, 1)
+            } else {
+                (i + j - d, -1)
+            };
 
             result[idx] = if sign > 0 {
                 add_mod(result[idx], prod, q)
@@ -285,7 +360,11 @@ impl RingElement {
             };
         }
 
-        Self { coeffs: result, cyclotomic: self.cyclotomic, q }
+        Self {
+            coeffs: result,
+            cyclotomic: self.cyclotomic,
+            q,
+        }
     }
 
     /// Multiplication for Φ_p(X) = X^{p-1} + ... + 1
@@ -304,13 +383,22 @@ impl RingElement {
 
         // Reduce: X^{p-1} ≡ -(1 + X + ... + X^{p-2})
         let mut result = unreduced[..d].to_vec();
-        for (k, &coeff) in unreduced.iter().enumerate().skip(d).filter(|(_, &c)| c != 0) {
+        for (k, &coeff) in unreduced
+            .iter()
+            .enumerate()
+            .skip(d)
+            .filter(|(_, &c)| c != 0)
+        {
             for i in 0..d {
                 result[(k - d + i) % d] = sub_mod(result[(k - d + i) % d], coeff, q);
             }
         }
 
-        Self { coeffs: result, cyclotomic: self.cyclotomic, q }
+        Self {
+            coeffs: result,
+            cyclotomic: self.cyclotomic,
+            q,
+        }
     }
 
     /// Multiplication for Φ_{2p}(X) = X^{p-1} - X^{p-2} + ... + 1
@@ -329,7 +417,12 @@ impl RingElement {
 
         // Reduce with alternating signs: X^{p-1} ≡ X^{p-2} - X^{p-3} + ... - 1
         let mut result = unreduced[..d].to_vec();
-        for (k, &coeff) in unreduced.iter().enumerate().skip(d).filter(|(_, &c)| c != 0) {
+        for (k, &coeff) in unreduced
+            .iter()
+            .enumerate()
+            .skip(d)
+            .filter(|(_, &c)| c != 0)
+        {
             for i in 0..d {
                 let target = k - d + i;
                 if target < d {
@@ -342,7 +435,11 @@ impl RingElement {
             }
         }
 
-        Self { coeffs: result, cyclotomic: self.cyclotomic, q }
+        Self {
+            coeffs: result,
+            cyclotomic: self.cyclotomic,
+            q,
+        }
     }
 }
 
@@ -360,7 +457,9 @@ impl RingElement {
             CyclotomicType::PowerOfTwo { .. } => {
                 let mut result = vec![0u64; d];
                 for (j, &coeff) in self.coeffs.iter().enumerate() {
-                    if coeff == 0 { continue; }
+                    if coeff == 0 {
+                        continue;
+                    }
                     let exp = (k * j) % (2 * d);
                     let idx = exp % d;
                     if exp < d {
@@ -369,13 +468,19 @@ impl RingElement {
                         result[idx] = sub_mod(result[idx], coeff, q);
                     }
                 }
-                Self { coeffs: result, cyclotomic: self.cyclotomic, q }
+                Self {
+                    coeffs: result,
+                    cyclotomic: self.cyclotomic,
+                    q,
+                }
             }
             CyclotomicType::OddPrime { p } | CyclotomicType::TwiceOddPrime { p } => {
                 let m = self.cyclotomic.conductor();
                 let mut result = Self::zero(self.cyclotomic, q);
                 for (j, &coeff) in self.coeffs.iter().enumerate() {
-                    if coeff == 0 { continue; }
+                    if coeff == 0 {
+                        continue;
+                    }
                     let new_exp = (k * j) % m;
                     let mut term = Self::zero(self.cyclotomic, q);
                     term.coeffs[new_exp % d] = coeff;
@@ -415,7 +520,8 @@ impl SparseTernary {
         use rand::seq::SliceRandom;
         let mut indices: Vec<usize> = (0..d).collect();
         indices.shuffle(rng);
-        let entries = indices.iter()
+        let entries = indices
+            .iter()
             .take(c)
             .map(|&idx| (idx, if rng.gen_bool(0.5) { 1i8 } else { -1i8 }))
             .collect();
@@ -451,11 +557,16 @@ impl SparseTernary {
             }
         }
 
-        let coeffs = result.iter()
+        let coeffs = result
+            .iter()
             .map(|&c| c.rem_euclid(q as i128) as u64)
             .collect();
 
-        RingElement { coeffs, cyclotomic: f.cyclotomic, q }
+        RingElement {
+            coeffs,
+            cyclotomic: f.cyclotomic,
+            q,
+        }
     }
 }
 

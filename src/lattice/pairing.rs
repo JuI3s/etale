@@ -70,7 +70,13 @@ impl TracePairingParams {
         debug_assert!(d >= 2 * k, "k must divide d/2");
 
         let n = d / k;
-        Self { d, k, n, half_n: d / (2 * k), scale: n }
+        Self {
+            d,
+            k,
+            n,
+            half_n: d / (2 * k),
+            scale: n,
+        }
     }
 
     /// Hachi parameters: d = 1024, k = 4
@@ -121,14 +127,19 @@ pub fn unpack<F: Field>(x: &CyclotomicRingElement<F>, params: &TracePairingParam
 /// Multiply two ring elements in R_q = Z_q[X]/(X^d + 1)
 ///
 /// Uses schoolbook multiplication with reduction mod (X^d + 1)
-pub fn ring_mul<F: Field>(a: &CyclotomicRingElement<F>, b: &CyclotomicRingElement<F>) -> CyclotomicRingElement<F> {
+pub fn ring_mul<F: Field>(
+    a: &CyclotomicRingElement<F>,
+    b: &CyclotomicRingElement<F>,
+) -> CyclotomicRingElement<F> {
     debug_assert_eq!(a.dim, b.dim);
     let d = a.dim;
 
     // Schoolbook multiplication
     let mut result = vec![F::zero(); 2 * d - 1];
     for (i, ai) in a.coeffs.iter().enumerate() {
-        if ai.is_zero() { continue; }
+        if ai.is_zero() {
+            continue;
+        }
         for (j, bj) in b.coeffs.iter().enumerate() {
             result[i + j] += *ai * *bj;
         }
@@ -171,7 +182,9 @@ pub fn inner_product_from_trace<F: Field + From<u64>>(
     h: &GaloisSubgroup,
 ) -> F {
     let trace_result = trace_pairing(packed_a, packed_b, h);
-    let scale_inv = F::from(params.scale as u64).inverse().expect("scale must be invertible");
+    let scale_inv = F::from(params.scale as u64)
+        .inverse()
+        .expect("scale must be invertible");
     trace_result.coeffs[0] * scale_inv
 }
 
@@ -182,7 +195,10 @@ pub fn direct_inner_product<F: Field>(a: &[F], b: &[F]) -> F {
 }
 
 /// Verify basis orthogonality: Tr_H(e_a · σ_{-1}(e_b)) = (d/k) · δ_{ab}
-pub fn verify_basis_orthogonality<F: Field + From<u64>>(params: &TracePairingParams, h: &GaloisSubgroup) -> bool {
+pub fn verify_basis_orthogonality<F: Field + From<u64>>(
+    params: &TracePairingParams,
+    h: &GaloisSubgroup,
+) -> bool {
     let scale = F::from(params.scale as u64);
     let check_limit = params.n.min(8);
 
@@ -242,7 +258,8 @@ mod tests {
         let d = 8;
         let one = CyclotomicRingElement::<TestFq>::new(vec![TestFq::from(1u64)], d);
         let x = CyclotomicRingElement::<TestFq>::new(
-            vec![TestFq::from(1u64), TestFq::from(2u64), TestFq::from(3u64)], d
+            vec![TestFq::from(1u64), TestFq::from(2u64), TestFq::from(3u64)],
+            d,
         );
         assert_eq!(ring_mul(&one, &x).coeffs, x.coeffs);
     }
@@ -251,7 +268,13 @@ mod tests {
     fn test_ring_mul_x_squared() {
         let d = 4;
         let x = CyclotomicRingElement::<TestFq>::new(
-            vec![TestFq::from(0u64), TestFq::from(1u64), TestFq::from(0u64), TestFq::from(0u64)], d
+            vec![
+                TestFq::from(0u64),
+                TestFq::from(1u64),
+                TestFq::from(0u64),
+                TestFq::from(0u64),
+            ],
+            d,
         );
         let x_squared = ring_mul(&x, &x);
         assert_eq!(x_squared.coeffs[2], TestFq::from(1u64));
@@ -262,10 +285,22 @@ mod tests {
         let d = 4;
         // X^3 * X = X^4 ≡ -1 mod (X^4 + 1)
         let x_cubed = CyclotomicRingElement::<TestFq>::new(
-            vec![TestFq::from(0u64), TestFq::from(0u64), TestFq::from(0u64), TestFq::from(1u64)], d
+            vec![
+                TestFq::from(0u64),
+                TestFq::from(0u64),
+                TestFq::from(0u64),
+                TestFq::from(1u64),
+            ],
+            d,
         );
         let x = CyclotomicRingElement::<TestFq>::new(
-            vec![TestFq::from(0u64), TestFq::from(1u64), TestFq::from(0u64), TestFq::from(0u64)], d
+            vec![
+                TestFq::from(0u64),
+                TestFq::from(1u64),
+                TestFq::from(0u64),
+                TestFq::from(0u64),
+            ],
+            d,
         );
         let result = ring_mul(&x_cubed, &x);
         assert_eq!(result.coeffs[0], -TestFq::from(1u64));
@@ -276,13 +311,18 @@ mod tests {
         let params = TracePairingParams::new(16, 2);
         let h = GaloisSubgroup::new(params.d, params.k);
 
-        let a: Vec<TestFq> = [1, 2, 3, 0, 0, 0, 0, 0].map(|x| TestFq::from(x as u64)).to_vec();
-        let b: Vec<TestFq> = [4, 5, 6, 0, 0, 0, 0, 0].map(|x| TestFq::from(x as u64)).to_vec();
+        let a: Vec<TestFq> = [1, 2, 3, 0, 0, 0, 0, 0]
+            .map(|x| TestFq::from(x as u64))
+            .to_vec();
+        let b: Vec<TestFq> = [4, 5, 6, 0, 0, 0, 0, 0]
+            .map(|x| TestFq::from(x as u64))
+            .to_vec();
 
         let direct = direct_inner_product(&a, &b);
         assert_eq!(direct, TestFq::from(32u64)); // 4 + 10 + 18
 
-        let recovered = inner_product_from_trace(&pack(&a, &params), &pack(&b, &params), &params, &h);
+        let recovered =
+            inner_product_from_trace(&pack(&a, &params), &pack(&b, &params), &params, &h);
         assert_eq!(recovered, direct);
     }
 
@@ -297,7 +337,8 @@ mod tests {
             let b: Vec<TestFq> = (0..params.n).map(|_| TestFq::rand(&mut rng)).collect();
 
             let direct = direct_inner_product(&a, &b);
-            let recovered = inner_product_from_trace(&pack(&a, &params), &pack(&b, &params), &params, &h);
+            let recovered =
+                inner_product_from_trace(&pack(&a, &params), &pack(&b, &params), &params, &h);
             assert_eq!(recovered, direct);
         }
     }
@@ -312,7 +353,10 @@ mod tests {
     #[test]
     fn test_hachi_params() {
         let params = TracePairingParams::hachi();
-        assert_eq!((params.d, params.k, params.n, params.half_n, params.scale), (1024, 4, 256, 128, 256));
+        assert_eq!(
+            (params.d, params.k, params.n, params.half_n, params.scale),
+            (1024, 4, 256, 128, 256)
+        );
     }
 
     #[test]
@@ -320,9 +364,15 @@ mod tests {
         let params = TracePairingParams::new(16, 2);
         let h = GaloisSubgroup::new(params.d, params.k);
 
-        let a1: Vec<TestFq> = [1, 0, 0, 0, 0, 0, 0, 0].map(|x| TestFq::from(x as u64)).to_vec();
-        let a2: Vec<TestFq> = [0, 1, 0, 0, 0, 0, 0, 0].map(|x| TestFq::from(x as u64)).to_vec();
-        let b: Vec<TestFq> = [3, 4, 0, 0, 0, 0, 0, 0].map(|x| TestFq::from(x as u64)).to_vec();
+        let a1: Vec<TestFq> = [1, 0, 0, 0, 0, 0, 0, 0]
+            .map(|x| TestFq::from(x as u64))
+            .to_vec();
+        let a2: Vec<TestFq> = [0, 1, 0, 0, 0, 0, 0, 0]
+            .map(|x| TestFq::from(x as u64))
+            .to_vec();
+        let b: Vec<TestFq> = [3, 4, 0, 0, 0, 0, 0, 0]
+            .map(|x| TestFq::from(x as u64))
+            .to_vec();
 
         let (pa1, pa2, pb) = (pack(&a1, &params), pack(&a2, &params), pack(&b, &params));
 

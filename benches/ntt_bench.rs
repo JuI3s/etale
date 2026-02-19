@@ -8,8 +8,8 @@
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use etale::lattice::decompose::{decompose_poly, recompose_poly};
 use etale::lattice::ntt::{
-    sparse_mul, NttTables, RingElement, RingParams, SparseTernary, COMPRESSED_K16,
-    COMPRESSED_K32, COMPRESSED_K4, COMPRESSED_K8, DILITHIUM_2, FALCON_512, GREYHOUND, HACHI,
+    sparse_mul, NttTables, RingElement, RingParams, SparseTernary, COMPRESSED_K16, COMPRESSED_K32,
+    COMPRESSED_K4, COMPRESSED_K8, DILITHIUM_2, FALCON_512, GREYHOUND, HACHI,
 };
 use rand::SeedableRng;
 use rand_chacha::ChaCha8Rng;
@@ -59,8 +59,8 @@ fn bench_ring_mul_ntt(c: &mut Criterion) {
     // Only properly NTT-friendly parameter sets (q ≡ 1 mod 2d)
     // Note: Kyber uses q ≡ 1 mod 256 (not 512), requiring a modified NTT
     let ntt_params: &[(&RingParams, u64)] = &[
-        (&DILITHIUM_2, 1753),  // psi for Dilithium (q=8380417, d=256)
-        (&FALCON_512, 49),     // psi for Falcon (q=12289, d=512)
+        (&DILITHIUM_2, 1753), // psi for Dilithium (q=8380417, d=256)
+        (&FALCON_512, 49),    // psi for Falcon (q=12289, d=512)
     ];
 
     for &(param, psi) in ntt_params {
@@ -180,10 +180,7 @@ fn bench_ntt_forward(c: &mut Criterion) {
     let mut rng = bench_rng();
 
     // Only properly NTT-friendly parameter sets
-    let ntt_params: &[(&RingParams, u64)] = &[
-        (&DILITHIUM_2, 1753),
-        (&FALCON_512, 49),
-    ];
+    let ntt_params: &[(&RingParams, u64)] = &[(&DILITHIUM_2, 1753), (&FALCON_512, 49)];
 
     for &(param, psi) in ntt_params {
         let tables = NttTables::new(param.d, param.q, psi);
@@ -215,10 +212,7 @@ fn bench_ntt_inverse(c: &mut Criterion) {
     let mut rng = bench_rng();
 
     // Only properly NTT-friendly parameter sets
-    let ntt_params: &[(&RingParams, u64)] = &[
-        (&DILITHIUM_2, 1753),
-        (&FALCON_512, 49),
-    ];
+    let ntt_params: &[(&RingParams, u64)] = &[(&DILITHIUM_2, 1753), (&FALCON_512, 49)];
 
     for &(param, psi) in ntt_params {
         let tables = NttTables::new(param.d, param.q, psi);
@@ -284,10 +278,8 @@ fn bench_recompose(c: &mut Criterion) {
     let mut group = c.benchmark_group("recompose");
     let mut rng = bench_rng();
 
-    let decomp_params: &[(&str, usize, u64, usize)] = &[
-        ("Hachi_b16", 1024, 16, 8),
-        ("Greyhound_b256", 64, 256, 4),
-    ];
+    let decomp_params: &[(&str, usize, u64, usize)] =
+        &[("Hachi_b16", 1024, 16, 8), ("Greyhound_b256", 64, 256, 4)];
 
     for &(name, d, b, delta) in decomp_params {
         let q = HACHI.q;
@@ -379,10 +371,4 @@ criterion_group!(
               bench_recompose
 );
 
-criterion_main!(
-    ring_arithmetic,
-    sparse_ops,
-    ntt_transforms,
-    decomposition
-);
-
+criterion_main!(ring_arithmetic, sparse_ops, ntt_transforms, decomposition);
