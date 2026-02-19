@@ -186,7 +186,8 @@ mod tests {
         assert_eq!(a.inner_product(&b), 13);
 
         // Verify rem_euclid vs % operator difference
-        assert_eq!((-5i64).rem_euclid(17), 12);
-        assert_eq!((-5i64) % 17, -5);
+        // -22 % 17 = -5 (Rust's %), but -22.rem_euclid(17) = 12
+        assert_eq!((-22i64).rem_euclid(17), 12);
+        assert_eq!((-22i64) % 17, -5);
     }
 }

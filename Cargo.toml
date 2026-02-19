@@ -28,3 +28,9 @@ harness = false
 name = "ntt_bench"
 harness = false
 
+[lints.rust]
+warnings = "deny"
+
+[lints.clippy]
+all = "warn"
+

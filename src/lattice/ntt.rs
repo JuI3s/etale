@@ -680,9 +680,9 @@ mod tests {
         assert_eq!(c.coeffs, vec![0, 1, 0, 0]);
 
         // Edge cases: verify rem_euclid vs % operator behavior
-        // Rust's % can return negative: -5 % 17 = -5
-        // But rem_euclid always returns [0, q): -5.rem_euclid(17) = 12
-        assert_eq!((-5i64).rem_euclid(17), 12);
-        assert_eq!((-5i64) % 17, -5); // contrast with % operator
+        // Rust's % can return negative: -22 % 17 = -5
+        // But rem_euclid always returns [0, q): -22.rem_euclid(17) = 12
+        assert_eq!((-22i64).rem_euclid(17), 12);
+        assert_eq!((-22i64) % 17, -5); // contrast with % operator
     }
 }
