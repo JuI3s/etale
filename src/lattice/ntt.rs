@@ -28,8 +28,10 @@
 use std::fmt;
 
 use itertools::iproduct;
+use rand::Rng;
 
 use super::modular::{add_mod, mod_inv, mul_mod, pow_mod, sub_mod};
+use super::ring::Ring;
 
 // Re-export params for convenience
 pub use super::params::{
@@ -260,6 +262,49 @@ impl RingElement {
             d,
             q,
         }
+    }
+}
+
+// ============================================================================
+// Ring Trait Implementation
+// ============================================================================
+
+impl Ring for RingElement {
+    fn degree(&self) -> usize {
+        self.d
+    }
+
+    fn modulus(&self) -> u64 {
+        self.q
+    }
+
+    fn add(&self, other: &Self) -> Self {
+        // Calls inherent method (inherent methods take precedence)
+        RingElement::add(self, other)
+    }
+
+    fn sub(&self, other: &Self) -> Self {
+        RingElement::sub(self, other)
+    }
+
+    fn mul(&self, other: &Self) -> Self {
+        self.mul_schoolbook(other)
+    }
+
+    fn neg(&self) -> Self {
+        RingElement::neg(self)
+    }
+
+    fn zero(d: usize, q: u64) -> Self {
+        RingElement::zero(d, q)
+    }
+
+    fn random<R: Rng>(rng: &mut R, d: usize, q: u64) -> Self {
+        RingElement::random(rng, d, q)
+    }
+
+    fn random_bounded<R: Rng>(rng: &mut R, d: usize, q: u64, bound: u64) -> Self {
+        RingElement::random_bounded(rng, d, q, bound)
     }
 }
 

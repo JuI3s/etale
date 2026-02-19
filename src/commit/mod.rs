@@ -4,8 +4,13 @@
 //!
 //! # Core Interface
 //!
-//! [`AjtaiKey`] is a pure random matrix A ∈ R_q^{κ × m}. The commitment to a
-//! short vector s is simply `t = A · s` via [`AjtaiKey::commit`].
+//! [`AjtaiKey<R>`] is a random matrix A ∈ R_q^{κ × m}, generic over ring
+//! representation. The commitment to a short vector s is `t = A · s`.
+//!
+//! - `AjtaiKey<RingElement>`: coefficient domain, O(d²) mul
+//! - `AjtaiKey<NttRingElement>`: NTT domain, O(d) mul
+//!
+//! Use [`AjtaiKey::to_ntt`] to convert a coefficient-domain key to NTT domain.
 //!
 //! # Decomposition Workflow (Hachi)
 //!
@@ -15,7 +20,8 @@
 //! t = A · G⁻¹(f₁, ..., fₗ) ∈ R_q^κ
 //! ```
 //!
-//! Use [`commit_decomposed`] and [`verify_decomposed`].
+//! Use [`commit_decomposed`] and [`verify_decomposed`]. These are
+//! coefficient-domain only (type-enforced).
 //!
 //! # Security
 //!
