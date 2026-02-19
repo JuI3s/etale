@@ -68,7 +68,8 @@ impl SplittingParams {
     pub fn compute_num_splits(n: usize, modulus: u64) -> usize {
         debug_assert!(n.is_power_of_two());
 
-        if modulus & 1 == 0 {  // modulus is 0 or even
+        if modulus & 1 == 0 {
+            // modulus is 0 or even
             return 1;
         }
 
